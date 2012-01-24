@@ -177,6 +177,7 @@ void
 complainx(const char *fmt, ...)
 {
 	char buf[256];
+	int unused;
 	va_list ap;
 
 	va_start(ap, fmt);
@@ -184,7 +185,7 @@ complainx(const char *fmt, ...)
 	va_end(ap);
 
 	/* Write the message in one go so it's atomic */
-	write(STDERR_FILENO, buf, strlen(buf));
+	unused = write(STDERR_FILENO, buf, strlen(buf));
 }
 
 static
@@ -194,13 +195,14 @@ complain(const char *fmt, ...)
 	char buf[256];
 	va_list ap;
 	int err = errno;
+	int unused;
 
 	va_start(ap, fmt);
 	vscomplain(buf, sizeof(buf), fmt, ap, err);
 	va_end(ap);
 
 	/* Write the message in one go so it's atomic */
-	write(STDERR_FILENO, buf, strlen(buf));
+	unused = write(STDERR_FILENO, buf, strlen(buf));
 }
 
 ////////////////////////////////////////////////////////////
