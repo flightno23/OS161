@@ -27,7 +27,7 @@ DEBUG='-O2'
 # Note that we quote it such that the reference to the home directory
 # is a make variable, not a shell variable. This means it gets expanded
 # when make runs rather than when this script runs.
-OSTREE='$(HOME)/cs161/root'
+OSTREE='$(HOME)/root'
 
 # Assume this
 HOST_CC=gcc
