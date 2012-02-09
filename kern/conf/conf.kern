@@ -408,7 +408,8 @@ defoption netfs
 ########################################
 
 defoption synchprobs
-optfile   synchprobs  synchprobs/whalemating.c
+optfile   synchprobs  synchprobs/drivers.c
+optfile   synchprobs  synchprobs/problems.c
 
 
 ########################################

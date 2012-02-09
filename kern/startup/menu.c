@@ -449,6 +449,8 @@ static const char *testmenu[] = {
 	"[sy1] Semaphore test                ",
 	"[sy2] Lock test             (1)     ",
 	"[sy3] CV test               (1)     ",
+	"[sp1] Whalematching Driver  (1)     ",
+	"[sp2] Stoplight Driver      (1)     ",
 	"[fs1] Filesystem test               ",
 	"[fs2] FS read stress        (4)     ",
 	"[fs3] FS write stress       (4)     ",
@@ -558,6 +560,10 @@ static struct {
 	/* synchronization assignment tests */
 	{ "sy2",	locktest },
 	{ "sy3",	cvtest },
+	
+  /* synchronization problem tests */
+  { "sp1", whalemating },
+  { "sp2", stoplight },
 
 	/* file system assignment tests */
 	{ "fs1",	fstest },
