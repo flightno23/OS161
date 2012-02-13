@@ -43,6 +43,14 @@
  * You should implement your solution to the whalemating problem below.
  */
 
+// 13 Feb 2012 : GWA : Adding at the suggestion of Isaac Elbaz. These
+// functions will allow you to do local initialization. They are called at
+// the top of the corresponding driver code.
+
+void whalemating_init() {
+  return;
+}
+
 void
 male(void *p, unsigned long which)
 {
@@ -117,6 +125,14 @@ matchmaker(void *p, unsigned long which)
  * Your solutions below should call the inQuadrant() and leaveIntersection()
  * functions in drivers.c.
  */
+
+// 13 Feb 2012 : GWA : Adding at the suggestion of Isaac Elbaz. These
+// functions will allow you to do local initialization. They are called at
+// the top of the corresponding driver code.
+
+void stoplight_init() {
+  return;
+}
 
 void
 gostraight(void *p, unsigned long direction)

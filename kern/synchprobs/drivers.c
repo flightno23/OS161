@@ -82,6 +82,9 @@ whalemating(int nargs, char **args)
     
     panic("whalemating: sem_create failed.\n");
   }
+ 
+  // 13 Feb 2012 : GWA : Students are smarter than me.
+  whalemating_init();
 
 	for (i = 0; i < 3; i++) {
 		for (j = 0; j < NMATING; j++) {
@@ -170,6 +173,9 @@ stoplight(int nargs, char **args)
     
     panic("stoplight: sem_create failed.\n");
   }
+  
+  // 13 Feb 2012 : GWA : Students are smarter than me.
+  stoplight_init();
 
   for (i = 0; i < NCARS; i++) {
     

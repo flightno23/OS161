@@ -56,6 +56,7 @@ int whalemating(int, char **);
 void male(void *, unsigned long);
 void female(void *, unsigned long);
 void matchmaker(void *, unsigned long);
+void whalemating_init(void);
  
 /*
  * Traffic light.
@@ -68,6 +69,7 @@ int stoplight(int, char **);
 void gostraight(void *, unsigned long);
 void turnleft(void *, unsigned long);
 void turnright(void *, unsigned long);
+void stoplight_init(void);
 
 /*
  * Test code.

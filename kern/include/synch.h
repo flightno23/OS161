@@ -137,5 +137,20 @@ void cv_wait(struct cv *cv, struct lock *lock);
 void cv_signal(struct cv *cv, struct lock *lock);
 void cv_broadcast(struct cv *cv, struct lock *lock);
 
+/*
+ * 13 Feb 2012 : GWA : Reader-writer locks.
+ */
+
+struct rwlock {
+        char *rwlock_name;
+};
+
+struct rwlock * rwlock_create(const char *);
+void rwlock_destroy(struct rwlock *);
+
+void rwlock_acquire_read(struct rwlock *);
+void rwlock_release_read(struct rwlock *);
+void rwlock_acquire_write(struct rwlock *);
+void rwlock_release_write(struct rwlock *);
 
 #endif /* _SYNCH_H_ */
