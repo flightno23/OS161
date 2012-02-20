@@ -479,13 +479,6 @@ cmd_testmenu(int n, char **a)
 static const char *mainmenu[] = {
 	"[?o] Operations menu                ",
 	"[?t] Tests menu                     ",
-#if OPT_SYNCHPROBS
-	"[sp1] Whale Mating                  ",
-#if 0
-	"[sp2] Cat/mouse                     ",
-	"[sp3] Stoplight                     ",
-#endif
-#endif
 	"[kh] Kernel heap stats              ",
 	"[q] Quit and shut down              ",
 	NULL
@@ -532,14 +525,6 @@ static struct {
 	{ "exit",	cmd_quit },
 	{ "halt",	cmd_quit },
 
-#if OPT_SYNCHPROBS
-	/* in-kernel synchronization problem(s) */
-	{ "sp1",	whalemating },
-#if 0
-	{ "sp2",	catmouse },
-	{ "sp3",	stoplight },
-#endif
-#endif
 
 	/* stats */
 	{ "kh",         cmd_kheapstats },
@@ -557,13 +542,17 @@ static struct {
 	{ "tt3",	threadtest3 },
 	{ "sy1",	semtest },
 
+#if OPT_SYNCHPROBS
 	/* synchronization assignment tests */
 	{ "sy2",	locktest },
 	{ "sy3",	cvtest },
+#endif
 	
+#if OPT_SYNCHPROBS
   /* synchronization problem tests */
   { "sp1", whalemating },
   { "sp2", stoplight },
+#endif
 
 	/* file system assignment tests */
 	{ "fs1",	fstest },

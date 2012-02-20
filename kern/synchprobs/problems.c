@@ -51,6 +51,13 @@ void whalemating_init() {
   return;
 }
 
+// 20 Feb 2012 : GWA : Adding at the suggestion of Nikhil Londhe. We don't
+// care if your problems leak memory, but if you do, use this to clean up.
+
+void whalemating_cleanup() {
+  return;
+}
+
 void
 male(void *p, unsigned long which)
 {
@@ -131,6 +138,13 @@ matchmaker(void *p, unsigned long which)
 // the top of the corresponding driver code.
 
 void stoplight_init() {
+  return;
+}
+
+// 20 Feb 2012 : GWA : Adding at the suggestion of Nikhil Londhe. We don't
+// care if your problems leak memory, but if you do, use this to clean up.
+
+void stoplight_cleanup() {
   return;
 }
 

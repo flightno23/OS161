@@ -114,6 +114,10 @@ whalemating(int nargs, char **args)
     }
   }
   sem_destroy(whalematingMenuSemaphore);
+  
+  // 13 Feb 2012 : GWA : Students are WAY smarter than me, including Nikhil
+  // Londhe.
+  whalemating_cleanup();
 
 	return 0;
 }
@@ -205,6 +209,10 @@ stoplight(int nargs, char **args)
   }
   
   sem_destroy(stoplightMenuSemaphore);
+  
+  // 13 Feb 2012 : GWA : Students are WAY smarter than me, including Nikhil
+  // Londhe.
+  stoplight_cleanup();
 
   return 0;
 }

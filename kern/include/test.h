@@ -57,6 +57,7 @@ void male(void *, unsigned long);
 void female(void *, unsigned long);
 void matchmaker(void *, unsigned long);
 void whalemating_init(void);
+void whalemating_cleanup(void);
  
 /*
  * Traffic light.
@@ -70,6 +71,7 @@ void gostraight(void *, unsigned long);
 void turnleft(void *, unsigned long);
 void turnright(void *, unsigned long);
 void stoplight_init(void);
+void stoplight_cleanup(void);
 
 /*
  * Test code.
