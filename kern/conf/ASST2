@@ -29,3 +29,4 @@ options sfs			# Always use the file system
 
 options dumbvm			# Chewing gum and baling wire for asst 1&2.
 #options synchprobs		# No longer needed/wanted after asst. 1
+options defaultscheduler

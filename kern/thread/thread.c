@@ -49,6 +49,7 @@
 #include <vnode.h>
 
 #include "opt-synchprobs.h"
+#include "opt-defaultscheduler.h"
 
 
 /* Magic number used as a guard value on kernel thread stacks. */
@@ -839,14 +840,20 @@ thread_yield(void)
  * the current CPU's run queue by job priority.
  */
 
+#if OPT_DEFAULTSCHEDULER
 void
 schedule(void)
 {
-	/*
-	 * You can write this. If we do nothing, threads will run in
-	 * round-robin fashion.
-	 */
+  // 28 Feb 2012 : GWA : Leave the default scheduler alone!
 }
+#else
+void
+schedule(void)
+{
+  // 28 Feb 2012 : GWA : Implement your scheduler that prioritizes
+  // "interactive" threads here.
+}
+#endif
 
 /*
  * Thread migration.

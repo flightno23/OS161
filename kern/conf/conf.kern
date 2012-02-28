@@ -394,6 +394,7 @@ optfile   sfs    fs/sfs/sfs_vnode.c
 # netfs (the networked filesystem - you might write this as one assignment)
 #
 defoption netfs
+defoption defaultscheduler
 #optfile  netfs     fs/netfs/netfs_fs.c   # or whatever
 
 #
