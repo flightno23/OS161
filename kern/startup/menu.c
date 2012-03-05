@@ -543,12 +543,10 @@ static struct {
 	{ "tt3",	threadtest3 },
 	{ "sy1",	semtest },
 
-#if OPT_SYNCHPROBS
 	/* synchronization assignment tests */
 	{ "sy2",	locktest },
 	{ "sy3",	cvtest },
 	{ "sy5",	cvtest2 },
-#endif
 	
 #if OPT_SYNCHPROBS
   /* synchronization problem tests */
