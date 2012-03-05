@@ -339,6 +339,8 @@ cvtest2(int nargs, char **args)
 	kprintf("Starting new CV test...\n");
 	kprintf("Threads should print out in reverse order.\n");
 	
+  testval1 = NTHREADS-1;
+	
 	for (i=0; i<NTHREADS; i++) {
 		result = thread_fork("synchtest", cvtest2thread, NULL, i,
 				      NULL);
