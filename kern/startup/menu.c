@@ -449,6 +449,7 @@ static const char *testmenu[] = {
 	"[sy1] Semaphore test                ",
 	"[sy2] Lock test             (1)     ",
 	"[sy3] CV test               (1)     ",
+	"[sy5] CV test 2             (1)     ",
 	"[sp1] Whalematching Driver  (1)     ",
 	"[sp2] Stoplight Driver      (1)     ",
 	"[fs1] Filesystem test               ",
@@ -546,6 +547,7 @@ static struct {
 	/* synchronization assignment tests */
 	{ "sy2",	locktest },
 	{ "sy3",	cvtest },
+	{ "sy5",	cvtest },
 #endif
 	
 #if OPT_SYNCHPROBS

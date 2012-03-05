@@ -302,3 +302,56 @@ cvtest(int nargs, char **args)
 
 	return 0;
 }
+
+static
+void
+cvtest2thread(void *junk, unsigned long num)
+{
+	int i;
+	(void)junk;
+
+	for (i=0; i<NCVLOOPS; i++) {
+		lock_acquire(testlock);
+		while (testval1 != num) {
+      testval2 = 0;
+			cv_wait(testcv, testlock);
+      testval2 = 0xFFFFFFFF;
+		}
+		testval2 = num;
+		cv_broadcast(testcv, testlock);
+		thread_yield();
+		kprintf("Thread %lu\n", testval2);
+		testval1 = (testval1 + NTHREADS - 1)%NTHREADS;
+		lock_release(testlock);
+	}
+	V(donesem);
+}
+
+int
+cvtest2(int nargs, char **args)
+{
+	int i, result;
+
+	(void)nargs;
+	(void)args;
+
+	inititems();
+	kprintf("Starting new CV test...\n");
+	kprintf("Threads should print out in reverse order.\n");
+	
+	for (i=0; i<NTHREADS; i++) {
+		result = thread_fork("synchtest", cvtest2thread, NULL, i,
+				      NULL);
+		if (result) {
+			panic("cvtest: thread_fork failed: %s\n",
+			      strerror(result));
+		}
+	}
+	for (i=0; i<NTHREADS; i++) {
+		P(donesem);
+	}
+
+	kprintf("CV test done\n");
+
+	return 0;
+}
