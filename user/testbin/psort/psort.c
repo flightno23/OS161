@@ -186,6 +186,7 @@ complainx(const char *fmt, ...)
 
 	/* Write the message in one go so it's atomic */
 	unused = write(STDERR_FILENO, buf, strlen(buf));
+	(void) unused;
 }
 
 static
@@ -203,6 +204,7 @@ complain(const char *fmt, ...)
 
 	/* Write the message in one go so it's atomic */
 	unused = write(STDERR_FILENO, buf, strlen(buf));
+	(void) unused;
 }
 
 ////////////////////////////////////////////////////////////
