@@ -589,6 +589,7 @@ thread_switch(threadstate_t newstate, struct wchan *wc)
 	switch (newstate) {
 	    case S_RUN:
 		panic("Illegal S_RUN in thread_switch\n");
+		break;
 	    case S_READY:
 		thread_make_runnable(cur, true /*have lock*/);
 		break;
