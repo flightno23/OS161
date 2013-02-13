@@ -13,6 +13,29 @@
 #include <synch.h>
 
 /*
+ * 13 Wed 2013 : GWA : Helper functions that try to make things more interesting.
+ */
+
+#define MAX_YIELDER 7
+__attribute__((unused)) static void yielder() {
+	int i, n;
+	n = random() % MAX_YIELDER + random() % MAX_YIELDER;
+	for (i = 0; i < n; i++) {
+		thread_yield();
+	}
+}
+
+#define MAX_SPINNER 18272
+__attribute__((unused)) static void spinner() {
+	int i, n;
+	volatile int spin;
+	n = random() % MAX_SPINNER + random() % MAX_SPINNER;
+	for (i = 0; i < n; i++) {
+		spin += i;
+	}
+}
+
+/*
  * 08 Feb 2012 : GWA : Driver code for the whalemating problem.
  */
 
@@ -193,27 +216,4 @@ int stoplight(int nargs, char **args) {
 	stoplight_cleanup();
 
 	return 0;
-}
-
-/*
- * 13 Wed 2013 : GWA : Helper functions that try to make things more interesting.
- */
-
-#define MAX_YIELDER 7
-__attribute__((unused)) static void yielder() {
-	int i, n;
-	n = random() % MAX_YIELDER + random() % MAX_YIELDER;
-	for (i = 0; i < n; i++) {
-		thread_yield();
-	}
-}
-
-#define MAX_SPINNER 18272
-__attribute__((unused)) static void spinner() {
-	int i, n;
-	volatile int spin;
-	n = random() % MAX_SPINNER + random() % MAX_SPINNER;
-	for (i = 0; i < n; i++) {
-		spin += i;
-	}
 }
