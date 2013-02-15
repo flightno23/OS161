@@ -12,28 +12,8 @@
 #include <current.h>
 #include <synch.h>
 
-/*
- * 13 Wed 2013 : GWA : Helper functions that try to make things more interesting.
- */
-
-#define MAX_YIELDER 7
-__attribute__((unused)) static void yielder() {
-	int i, n;
-	n = random() % MAX_YIELDER + random() % MAX_YIELDER;
-	for (i = 0; i < n; i++) {
-		thread_yield();
-	}
-}
-
-#define MAX_SPINNER 18272
-__attribute__((unused)) static void spinner() {
-	int i, n;
-	volatile int spin;
-	n = random() % MAX_SPINNER + random() % MAX_SPINNER;
-	for (i = 0; i < n; i++) {
-		spin += i;
-	}
-}
+#define PROBLEMS_MAX_YIELDER 16
+#define PROBLEMS_MAX_SPINNER 8192
 
 /*
  * 08 Feb 2012 : GWA : Driver code for the whalemating problem.
@@ -48,7 +28,7 @@ __attribute__((unused)) static void spinner() {
  */
 
 inline void male_start(void) {
-	yielder();
+	random_yielder(PROBLEMS_MAX_YIELDER);
 	kprintf("%s starting\n", curthread->t_name);
 }
 
@@ -57,7 +37,7 @@ inline void male_end(void) {
 }
 
 inline void female_start(void) {
-	spinner();
+	random_spinner(PROBLEMS_MAX_SPINNER);
 	kprintf("%s starting\n", curthread->t_name);
 }
 
@@ -66,7 +46,7 @@ inline void female_end(void) {
 }
 
 inline void matchmaker_start(void) {
-	yielder();
+	random_yielder(PROBLEMS_MAX_YIELDER);
 	kprintf("%s starting\n", curthread->t_name);
 }
 
@@ -101,6 +81,9 @@ int whalemating(int nargs, char **args) {
 
 	for (i = 0; i < 3; i++) {
 		for (j = 0; j < NMATING; j++) {
+
+			random_yielder(PROBLEMS_MAX_YIELDER);
+
 			switch (i) {
 			case 0:
 				snprintf(name, sizeof(name), "Male Whale Thread %d", (i * 3) + j);
@@ -157,7 +140,7 @@ int whalemating(int nargs, char **args) {
  */
 
 inline void inQuadrant(int quadrant) {
-	spinner();
+	random_spinner(PROBLEMS_MAX_SPINNER);
 	kprintf("%s in quadrant %d\n", curthread->t_name, quadrant);
 }
 
@@ -190,6 +173,9 @@ int stoplight(int nargs, char **args) {
 		snprintf(name, sizeof(name), "Car Thread %d", i);
 
 		switch (turn) {
+
+		random_yielder(PROBLEMS_MAX_YIELDER);
+
 		case 0:
 			err = thread_fork(name, gostraight,
 					stoplightMenuSemaphore, direction,
