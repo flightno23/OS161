@@ -27,6 +27,8 @@
  * SUCH DAMAGE.
  */
 
+/*ktekchan*/
+
 /*
  * Main.
  */
