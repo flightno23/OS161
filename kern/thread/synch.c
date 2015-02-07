@@ -198,7 +198,7 @@ lock_acquire(struct lock *lock)
 	KASSERT(curthread->t_in_interrupt == false);
 	/* if lock is held , sleep on wait channel */
 	spinlock_acquire(&lock->lock_spinlock);
-	if (lock->lock_holder != NULL) {
+	while (lock->lock_holder != NULL) {
 		wchan_lock(lock->lock_wchan);
 		spinlock_release(&lock->lock_spinlock);
 		wchan_sleep(lock->lock_wchan);
@@ -206,22 +206,21 @@ lock_acquire(struct lock *lock)
 	}
 	/* after thread is woken up, acquire the lock */
 	lock->lock_holder = curthread;
+	spinlock_release(&lock->lock_spinlock);
 	
 }
 
 void
 lock_release(struct lock *lock)
 {
-        // 
 	
 	/* if thread holds the lock then only release */
-	if (lock_do_i_hold(lock) == true) {
-
-		lock->lock_holder = NULL;
-		spinlock_release(&lock->lock_spinlock);
-		wchan_wakeone(lock->lock_wchan);
-	
-	}
+	KASSERT(lock_do_i_hold(lock) == true);
+		
+	spinlock_acquire(&lock->lock_spinlock);
+	lock->lock_holder = NULL;
+	spinlock_release(&lock->lock_spinlock);
+	wchan_wakeone(lock->lock_wchan);
         
 }
 
@@ -287,12 +286,12 @@ cv_wait(struct cv *cv, struct lock *lock)
         // Write this
         // (void)cv;    // suppress warning until code gets written
         // (void)lock;  // suppress warning until code gets written
-	if(lock_do_i_hold(lock) == true) {
-		lock_release(lock);
-		wchan_lock(cv->cv_wchan);
-		wchan_sleep(cv->cv_wchan);
-		lock_acquire(lock);
-	}
+	KASSERT(lock_do_i_hold(lock) == true); 
+	lock_release(lock);
+	wchan_lock(cv->cv_wchan);
+	wchan_sleep(cv->cv_wchan);
+	lock_acquire(lock);
+
 }
 
 void
@@ -300,7 +299,7 @@ cv_signal(struct cv *cv, struct lock *lock)
 {
         // Write this
 	// (void)cv;    // suppress warning until code gets written
-	if(lock_do_i_hold(lock) == true)
+	KASSERT(lock_do_i_hold(lock) == true);
 	wchan_wakeone(cv->cv_wchan);	
 }
 
@@ -309,6 +308,6 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 {
 	// Write this
 	// (void)cv;    // suppress warning until code gets written
-	if(lock_do_i_hold(lock) == true)
+	KASSERT(lock_do_i_hold(lock) == true);
 	wchan_wakeall(cv->cv_wchan);
 }
