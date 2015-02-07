@@ -144,9 +144,12 @@ void cv_broadcast(struct cv *cv, struct lock *lock);
 /*
  * 13 Feb 2012 : GWA : Reader-writer locks.
  */
+#define MAX_READERS 50
 
 struct rwlock {
         char *rwlock_name;
+	struct semaphore *rw_sem;
+	struct lock *lock;
 };
 
 struct rwlock * rwlock_create(const char *);
