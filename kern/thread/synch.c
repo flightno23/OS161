@@ -321,7 +321,7 @@ struct rwlock *
 rwlock_create(const char *name){
 
         struct rwlock *rw_lock;
-
+	
        // KASSERT(initial_count >= 0);
 
         rw_lock = kmalloc(sizeof(struct rwlock));
@@ -363,9 +363,7 @@ rwlock_acquire_read(struct rwlock *rw_lock){
 void
 rwlock_release_read(struct rwlock *rw_lock){
 	
-	lock_acquire(rw_lock->lock);
 	V(rw_lock->rw_sem);
-	lock_release(rw_lock->lock);
 }
 
 void
@@ -383,11 +381,9 @@ void
 rwlock_release_write(struct rwlock *rw_lock){
 	
 	int i;
-	lock_acquire(rw_lock->lock);
 	for(i=0; i<MAX_READERS; i++){
 		V(rw_lock->rw_sem);
 	}
-	lock_release(rw_lock->lock);
 }
 
 
