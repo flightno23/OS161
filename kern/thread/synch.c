@@ -288,8 +288,8 @@ cv_wait(struct cv *cv, struct lock *lock)
         // (void)cv;    // suppress warning until code gets written
         // (void)lock;  // suppress warning until code gets written
 	KASSERT(lock_do_i_hold(lock) == true); 
-	lock_release(lock);
 	wchan_lock(cv->cv_wchan);
+	lock_release(lock);
 	wchan_sleep(cv->cv_wchan);
 	lock_acquire(lock);
 
