@@ -47,15 +47,41 @@
 // functions will allow you to do local initialization. They are called at
 // the top of the corresponding driver code.
 
+
+
+struct semaphore * male_sem;
+struct semaphore * female_sem;
+struct semaphore * match_sem;
+
+struct lock * common_lock;
+// struct semaphore * common_sem;
+struct cv * common_cv;
+
+int sem_count = 3;
+
 void whalemating_init() {
-  return;
+  	male_sem = sem_create("man sem", 1);
+	female_sem = sem_create("female sem", 1);
+	match_sem = sem_create("match sem", 1);
+
+	common_lock = lock_create("common lock");
+	common_cv = cv_create("common cv");
+	return;
 }
 
 // 20 Feb 2012 : GWA : Adding at the suggestion of Nikhil Londhe. We don't
 // care if your problems leak memory, but if you do, use this to clean up.
 
 void whalemating_cleanup() {
-  return;
+
+	sem_destroy(male_sem);
+	sem_destroy(female_sem);
+	sem_destroy(match_sem);
+	
+	lock_destroy(common_lock);
+	cv_destroy(common_cv);
+  	
+	return;
 }
 
 void
@@ -63,11 +89,19 @@ male(void *p, unsigned long which)
 {
 	struct semaphore * whalematingMenuSemaphore = (struct semaphore *)p;
   (void)which;
-  
   male_start();
-	// Implement this function 
+	// Implement this function
+	P(male_sem);
+	lock_acquire(common_lock);
+	sem_count--;
+	if (sem_count != 0)
+		cv_wait(common_cv, common_lock);
+	else	
+		sem_count = 3;
+		cv_broadcast(common_cv, common_lock);
+	lock_release(common_lock);
   male_end();
-
+	V(male_sem);
   // 08 Feb 2012 : GWA : Please do not change this code. This is so that your
   // whalemating driver can return to the menu cleanly.
   V(whalematingMenuSemaphore);
@@ -82,8 +116,18 @@ female(void *p, unsigned long which)
   
   female_start();
 	// Implement this function 
+	P(female_sem);
+	lock_acquire(common_lock);
+	sem_count--;
+	if (sem_count != 0)
+		cv_wait(common_cv, common_lock);
+	else	
+		sem_count = 3;
+		cv_broadcast(common_cv, common_lock);
+	lock_release(common_lock);
   female_end();
-  
+	V(female_sem);
+	
   // 08 Feb 2012 : GWA : Please do not change this code. This is so that your
   // whalemating driver can return to the menu cleanly.
   V(whalematingMenuSemaphore);
@@ -97,11 +141,17 @@ matchmaker(void *p, unsigned long which)
   (void)which;
   
   matchmaker_start();
-	// Implement this function 
+	P(match_sem);
+	lock_acquire(common_lock);
+	sem_count--;
+	if (sem_count != 0)
+		cv_wait(common_cv, common_lock);
+	else	
+		sem_count = 3;
+		cv_broadcast(common_cv, common_lock);
+	lock_release(common_lock);
   matchmaker_end();
-  
-  // 08 Feb 2012 : GWA : Please do not change this code. This is so that your
-  // whalemating driver can return to the menu cleanly.
+	V(match_sem);
   V(whalematingMenuSemaphore);
   return;
 }

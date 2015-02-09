@@ -143,6 +143,12 @@ V(struct semaphore *sem)
 	spinlock_release(&sem->sem_lock);
 }
 
+int
+check_sem_count(struct semaphore *sem) {
+
+	return sem->sem_count;
+}
+
 ////////////////////////////////////////////////////////////
 //
 // Lock.
