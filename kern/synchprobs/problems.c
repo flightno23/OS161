@@ -227,11 +227,39 @@ gostraight(void *p, unsigned long direction)
   int quad1;
   lock_acquire(signal);
   quad1 = (direction + 3) % 4;
-  getStraightLocks(direction);
+	switch(direction) {
+
+		case 0: lock_acquire(lock0);
+			lock_acquire(lock3);
+			break;
+		case 1: lock_acquire(lock1);
+			lock_acquire(lock0);
+			break;
+		case 2: lock_acquire(lock2);
+			lock_acquire(lock1);
+			break;
+		case 3: lock_acquire(lock3);
+			lock_acquire(lock2);
+			break;
+	}	
   inQuadrant(direction);
   inQuadrant(quad1);
   leaveIntersection();
-  releaseStraightLocks(direction);
+	switch(direction) {
+
+		case 0: lock_release(lock3);
+			lock_release(lock0);
+			break;
+		case 1: lock_release(lock0);
+			lock_release(lock1);
+			break;
+		case 2: lock_release(lock1);
+			lock_release(lock2);
+			break;
+		case 3: lock_release(lock2);
+			lock_release(lock3);
+			break;
+	}
   lock_release(signal);
   // 08 Feb 2012 : GWA : Please do not change this code. This is so that your
   // stoplight drivercan return to the menu cleanly.
@@ -248,12 +276,50 @@ turnleft(void *p, unsigned long direction)
   lock_acquire(signal);
   quad1 = (direction + 3) % 4;
   quad2 = (direction + 2) % 4;
-  getLeftLocks(direction);
+	switch(direction) {
+
+		case 0: lock_acquire(lock0);
+			lock_acquire(lock3);
+			lock_acquire(lock2);
+			
+			break;
+		case 1: lock_acquire(lock1);
+			lock_acquire(lock0);
+			lock_acquire(lock3);
+			break;
+		case 2: lock_acquire(lock2);
+			lock_acquire(lock1);
+			lock_acquire(lock0);
+			break;
+		case 3: lock_acquire(lock3);
+			lock_acquire(lock2);
+			lock_acquire(lock1);
+			break;
+	}
   inQuadrant(direction);
   inQuadrant(quad1);
   inQuadrant(quad2);
   leaveIntersection(); 
-  releaseLeftLocks(direction);
+  
+	switch(direction) {
+
+		case 0: lock_release(lock2);
+			lock_release(lock3);
+			lock_release(lock0);
+			break;
+		case 1: lock_release(lock3);
+			lock_release(lock0);
+			lock_release(lock1);
+			break;
+		case 2: lock_release(lock0);
+			lock_release(lock1);
+			lock_release(lock2);
+			break;
+		case 3: lock_release(lock1);
+			lock_release(lock2);
+			lock_release(lock3);
+			break;
+	}
   lock_release(signal);
 
   
@@ -303,95 +369,3 @@ turnright(void *p, unsigned long direction)
   return;
 }
 
-void getStraightLocks(unsigned long quadrant) {
-
-	switch(quadrant) {
-
-		case 0: lock_acquire(lock0);
-			lock_acquire(lock3);
-			break;
-		case 1: lock_acquire(lock1);
-			lock_acquire(lock0);
-			break;
-		case 2: lock_acquire(lock2);
-			lock_acquire(lock1);
-			break;
-		case 3: lock_acquire(lock3);
-			lock_acquire(lock2);
-			break;
-	}	
-	return;	
-}
-
-
-void releaseStraightLocks(unsigned long quadrant) {
-
-	switch(quadrant) {
-
-		case 0: lock_release(lock3);
-			lock_release(lock0);
-			break;
-		case 1: lock_release(lock0);
-			lock_release(lock1);
-			break;
-		case 2: lock_release(lock1);
-			lock_release(lock2);
-			break;
-		case 3: lock_release(lock2);
-			lock_release(lock3);
-			break;
-	}
-	return;	
-}
-
-
-
-void getLeftLocks(unsigned long quadrant) {
-
-	switch(quadrant) {
-
-		case 0: lock_acquire(lock0);
-			lock_acquire(lock3);
-			lock_acquire(lock2);
-			
-			break;
-		case 1: lock_acquire(lock1);
-			lock_acquire(lock0);
-			lock_acquire(lock3);
-			break;
-		case 2: lock_acquire(lock2);
-			lock_acquire(lock1);
-			lock_acquire(lock0);
-			break;
-		case 3: lock_acquire(lock3);
-			lock_acquire(lock2);
-			lock_acquire(lock1);
-			break;
-	}
-	return;		
-}
-
-
-void releaseLeftLocks(unsigned long quadrant) {
-
-	switch(quadrant) {
-
-		case 0: lock_release(lock2);
-			lock_release(lock3);
-			lock_release(lock0);
-			break;
-		case 1: lock_release(lock3);
-			lock_release(lock0);
-			lock_release(lock1);
-			break;
-		case 2: lock_release(lock0);
-			lock_release(lock1);
-			lock_release(lock2);
-			break;
-		case 3: lock_release(lock1);
-			lock_release(lock2);
-			lock_release(lock3);
-			break;
-	}
-	return;	
-}
