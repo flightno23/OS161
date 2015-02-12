@@ -187,11 +187,10 @@ matchmaker(void *p, unsigned long which)
 // functions will allow you to do local initialization. They are called at
 // the top of the corresponding driver code.
 
-struct lock * biglock;
-
+struct lock *signal;
 
 void stoplight_init() {
-  biglock = lock_create("one huge lock");
+  signal = lock_create("one huge lock");
   return;
 }
 
@@ -199,7 +198,7 @@ void stoplight_init() {
 // care if your problems leak memory, but if you do, use this to clean up.
 
 void stoplight_cleanup() {
-  lock_destroy(biglock);
+  lock_destroy(signal);
   return;
 }
 
@@ -208,28 +207,15 @@ gostraight(void *p, unsigned long direction)
 {
 	struct semaphore * stoplightMenuSemaphore = (struct semaphore *)p;
   (void)direction;
-  lock_acquire(biglock);
-  switch(direction) {
-  	case 0: inQuadrant(0);
-		inQuadrant(3);
-		leaveIntersection();
-		break;
-	case 1: inQuadrant(1);
-		inQuadrant(0);
-		leaveIntersection();
-		break;
-	case 2: inQuadrant(2);
-		inQuadrant(1);
-		leaveIntersection();
-		break;
-	case 3: inQuadrant(3);
-		inQuadrant(2);
-		leaveIntersection();
-		break;
-  }
-  lock_release(biglock);
+  int quad1;
+  lock_acquire(signal);
+  quad1 = (direction + 3) % 4;
+  inQuadrant(direction);
+  inQuadrant(quad1);
+  leaveIntersection();
+  lock_release(signal);
   // 08 Feb 2012 : GWA : Please do not change this code. This is so that your
-  // stoplight driver can return to the menu cleanly.
+  // stoplight drivercan return to the menu cleanly.
   V(stoplightMenuSemaphore);
   return;
 }
@@ -239,30 +225,15 @@ turnleft(void *p, unsigned long direction)
 {
 	struct semaphore * stoplightMenuSemaphore = (struct semaphore *)p;
   (void)direction;
-  lock_acquire(biglock);
-  switch(direction) {
-  	case 0: inQuadrant(0);
-		inQuadrant(3);
-		inQuadrant(2);
-		leaveIntersection();
-		break;
-	case 1: inQuadrant(1);
-		inQuadrant(0);
-		inQuadrant(3);
-		leaveIntersection();
-		break;
-	case 2: inQuadrant(2);
-		inQuadrant(1);
-		inQuadrant(0);
-		leaveIntersection();
-		break;
-	case 3: inQuadrant(3);
-		inQuadrant(2);
-		inQuadrant(1);
-		leaveIntersection();
-		break;
-  }
-  lock_release(biglock);
+  int quad1,quad2;
+  lock_acquire(signal);
+  quad1 = (direction + 3) % 4;
+  quad2 = (direction + 2) % 4;
+  inQuadrant(direction);
+  inQuadrant(quad1);
+  inQuadrant(quad2);
+  leaveIntersection(); 
+  lock_release(signal);
 
   
   
@@ -277,22 +248,10 @@ turnright(void *p, unsigned long direction)
 {
 	struct semaphore * stoplightMenuSemaphore = (struct semaphore *)p;
   (void)direction;
-  lock_acquire(biglock);
-  switch(direction) {
-  	case 0: inQuadrant(0);
-		leaveIntersection();
-		break;
-	case 1: inQuadrant(1);
-		leaveIntersection();
-		break;
-	case 2: inQuadrant(2);
-		leaveIntersection();
-		break;
-	case 3: inQuadrant(3);
-		leaveIntersection();
-		break;
-  }
-  lock_release(biglock);
+  lock_acquire(signal);
+  inQuadrant(direction);
+  leaveIntersection();
+  lock_release(signal);
 
   // 08 Feb 2012 : GWA : Please do not change this code. This is so that your
   // stoplight driver can return to the menu cleanly.
