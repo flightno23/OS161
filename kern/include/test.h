@@ -72,6 +72,10 @@ void turnleft(void *, unsigned long);
 void turnright(void *, unsigned long);
 void stoplight_init(void);
 void stoplight_cleanup(void);
+void getStraightLocks(unsigned long);
+void releaseStraightLocks(unsigned long);
+void getLeftLocks(unsigned long);
+void releaseLeftLocks(unsigned long);
 
 /*
  * Test code.

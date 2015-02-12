@@ -189,8 +189,21 @@ matchmaker(void *p, unsigned long which)
 
 struct lock *signal;
 
+struct lock *lock0;
+struct lock *lock1;
+struct lock *lock2;
+struct lock *lock3;
+
+
+
+
 void stoplight_init() {
   signal = lock_create("one huge lock");
+  lock0 = lock_create("quadrant 0");
+  lock1 = lock_create("quadrant 1");
+  lock2 = lock_create("quadrant 2");
+  lock3 = lock_create("quadrant 3");
+  
   return;
 }
 
@@ -199,6 +212,10 @@ void stoplight_init() {
 
 void stoplight_cleanup() {
   lock_destroy(signal);
+  lock_destroy(lock0);
+  lock_destroy(lock1);
+  lock_destroy(lock2);
+  lock_destroy(lock3);
   return;
 }
 
@@ -210,9 +227,11 @@ gostraight(void *p, unsigned long direction)
   int quad1;
   lock_acquire(signal);
   quad1 = (direction + 3) % 4;
+  getStraightLocks(direction);
   inQuadrant(direction);
   inQuadrant(quad1);
   leaveIntersection();
+  releaseStraightLocks(direction);
   lock_release(signal);
   // 08 Feb 2012 : GWA : Please do not change this code. This is so that your
   // stoplight drivercan return to the menu cleanly.
@@ -229,10 +248,12 @@ turnleft(void *p, unsigned long direction)
   lock_acquire(signal);
   quad1 = (direction + 3) % 4;
   quad2 = (direction + 2) % 4;
+  getLeftLocks(direction);
   inQuadrant(direction);
   inQuadrant(quad1);
   inQuadrant(quad2);
   leaveIntersection(); 
+  releaseLeftLocks(direction);
   lock_release(signal);
 
   
@@ -248,13 +269,129 @@ turnright(void *p, unsigned long direction)
 {
 	struct semaphore * stoplightMenuSemaphore = (struct semaphore *)p;
   (void)direction;
-  lock_acquire(signal);
-  inQuadrant(direction);
-  leaveIntersection();
-  lock_release(signal);
 
+  switch(direction) {
+	case 0:
+		lock_acquire(lock0);
+		inQuadrant(direction);
+		leaveIntersection();
+		lock_release(lock0);
+		break;
+	case 1:
+		lock_acquire(lock1);
+		inQuadrant(direction);
+		leaveIntersection();
+		lock_release(lock1);
+		break;
+	case 2:
+		lock_acquire(lock2);
+		inQuadrant(direction);
+		leaveIntersection();
+		lock_release(lock2);
+		break;
+	case 3:
+		lock_acquire(lock3);
+		inQuadrant(direction);
+		leaveIntersection();
+		lock_release(lock3);
+		break;
+	
+  }	
   // 08 Feb 2012 : GWA : Please do not change this code. This is so that your
   // stoplight driver can return to the menu cleanly.
   V(stoplightMenuSemaphore);
   return;
+}
+
+void getStraightLocks(unsigned long quadrant) {
+
+	switch(quadrant) {
+
+		case 0: lock_acquire(lock0);
+			lock_acquire(lock3);
+			break;
+		case 1: lock_acquire(lock1);
+			lock_acquire(lock0);
+			break;
+		case 2: lock_acquire(lock2);
+			lock_acquire(lock1);
+			break;
+		case 3: lock_acquire(lock3);
+			lock_acquire(lock2);
+			break;
+	}	
+	return;	
+}
+
+
+void releaseStraightLocks(unsigned long quadrant) {
+
+	switch(quadrant) {
+
+		case 0: lock_release(lock3);
+			lock_release(lock0);
+			break;
+		case 1: lock_release(lock0);
+			lock_release(lock1);
+			break;
+		case 2: lock_release(lock1);
+			lock_release(lock2);
+			break;
+		case 3: lock_release(lock2);
+			lock_release(lock3);
+			break;
+	}
+	return;	
+}
+
+
+
+void getLeftLocks(unsigned long quadrant) {
+
+	switch(quadrant) {
+
+		case 0: lock_acquire(lock0);
+			lock_acquire(lock3);
+			lock_acquire(lock2);
+			
+			break;
+		case 1: lock_acquire(lock1);
+			lock_acquire(lock0);
+			lock_acquire(lock3);
+			break;
+		case 2: lock_acquire(lock2);
+			lock_acquire(lock1);
+			lock_acquire(lock0);
+			break;
+		case 3: lock_acquire(lock3);
+			lock_acquire(lock2);
+			lock_acquire(lock1);
+			break;
+	}
+	return;		
+}
+
+
+void releaseLeftLocks(unsigned long quadrant) {
+
+	switch(quadrant) {
+
+		case 0: lock_release(lock2);
+			lock_release(lock3);
+			lock_release(lock0);
+			break;
+		case 1: lock_release(lock3);
+			lock_release(lock0);
+			lock_release(lock1);
+			break;
+		case 2: lock_release(lock0);
+			lock_release(lock1);
+			lock_release(lock2);
+			break;
+		case 3: lock_release(lock1);
+			lock_release(lock2);
+			lock_release(lock3);
+			break;
+	}
+	return;	
 }
