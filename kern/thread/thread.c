@@ -153,6 +153,11 @@ thread_create(const char *name)
 	thread->t_cwd = NULL;
 
 	/* If you add to struct thread, be sure to initialize here */
+	
+	/* initializing all elements of the file table to NULL initially*/
+	for (int i=0; i < OPEN_MAX; i++) {
+		thread->t_fdtable[i] = NULL;
+	}
 
 	return thread;
 }

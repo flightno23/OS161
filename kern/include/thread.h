@@ -38,6 +38,7 @@
 
 #include <spinlock.h>
 #include <threadlist.h>
+#include <limits.h>
 
 struct addrspace;
 struct cpu;
@@ -112,7 +113,9 @@ struct thread {
 	struct vnode *t_cwd;		/* current working directory */
 
 	/* add more here as needed */
+	struct fhandle * t_fdtable[OPEN_MAX];
 };
+
 
 /* Call once during system startup to allocate data structures. */
 void thread_bootstrap(void);

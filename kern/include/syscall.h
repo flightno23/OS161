@@ -29,7 +29,7 @@
 
 #ifndef _SYSCALL_H_
 #define _SYSCALL_H_
-
+#include <kern/fileOperations.h>
 
 struct trapframe; /* from <machine/trapframe.h> */
 
