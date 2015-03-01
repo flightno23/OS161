@@ -30,3 +30,14 @@ int sys_write(int fd, void * buf, size_t nbytes, int * retval);
 /* sys_read function prototype */
 int sys_read(int fd, void * buf, size_t nbytes, int * retval);
 
+/* sys_dup2 function prototype */
+int sys_dup2(int oldfd, int newfd, int * retval);
+
+/* sys_chdir function prototype */
+int sys_chdir(const_userptr_t pathname);
+
+/* sys_getcwd function prototype */
+int sys_getcwd(userptr_t buf, int * retval);
+
+/* sys_lseek function prototype */
+int sys_lseek(struct * tf, int * retval);

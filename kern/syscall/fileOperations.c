@@ -214,7 +214,76 @@ int sys_read(int fd, void *buf, size_t nbytes, int * retval){
 	return 0;	
 }
 
+/* dup2() call handler*/
+int sys_dup2(int oldfd, int newfd, int * retval) {
 
+
+	/* Check the validity of arguments*/
+	if(oldfd >= OPEN_MAX || oldfd < 0 || newfd >= OPEN_MAX || newfd < 0 ){
+		return EBADF;
+	}
+
+	struct fhandle *fdesc;
+	fdesc = curthread->t_fdtable[oldfd];
+	/* Check if newfd points to null*/
+	if (curthread->t_fdtable[newfd] == NULL){
+		curthread->t_fdtable[newfd] = fdesc;
+		fdesc->ref_count++;
+	}else {
+	/* Close existing fd */
+		sys_close(newfd);
+		curthread->t_fdtable[newfd] = fdesc;
+		fdesc->ref_count++;
+	}
+
+	*retval = newfd;
+	return 0;
+}
+
+/* chdir() function handler */
+int sys_chdir(const_userptr_t pathName){
+	
+	char pathNameFromUser[BUF_SIZE];
+	size_t actual;
+	int err;
+
+	if (pathName == NULL){
+		return EFAULT;
+	}
+
+	if ((err =  copyinstr(pathName, pathNameFromUser, BUF_SIZE, &actual) != 0)){
+		return err;
+	}
+
+	err = vfs_chdir(pathNameFromUser);	
+	return err;
+	
+}
+
+/* __getcwd() function handler */
+int sys_getcwd(userptr_t buf, int * retval){
+
+	struct uio user;
+	struct iovec iov;
+	uio_kinit(&iov, &user, buf, BUF_SIZE, 0, UIO_READ);
+	user.uio_segflg = UIO_USERSPACE;
+	user.uio_space = curthread->t_addrspace;
+
+	
+	int err;
+	if ((err = vfs_getcwd(&user) != 0)){
+		return err;
+	}
+
+	*retval = BUF_SIZE - user.uio_resid;
+	return 0;
+	
+}
+
+/* lseek() call handler */
+int sys_lseek(struct * tf, int * retval){
+	
+}
 
 /* This function creates the file handle */
 struct fhandle * fhandle_create(char *name, int flags, off_t offset, struct vnode *node) {
