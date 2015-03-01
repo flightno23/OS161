@@ -44,7 +44,7 @@ int sys_open(const_userptr_t fileName, int flags, int * retval) {
 
 	// Step 3: if steps 1 and 2 are passing, then find an empty slot in the tfd_table and allocate it to this file that is going to be opened
 	int slot = -1;
-	for (int i=2; i<OPEN_MAX; i++) {
+	for (int i=3; i<OPEN_MAX; i++) {
 		if (curthread->t_fdtable[i] == NULL) {
 			slot = i;
 			break;	

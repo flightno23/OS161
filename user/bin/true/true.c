@@ -29,6 +29,7 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 /*
  * true - succeed.
@@ -38,5 +39,18 @@ int
 main()
 {
 	/* Just exit with success. */
-	exit(0);
+	/*open test */
+	int fd;
+	fd = open("test",2|4);
+	close(fd);
+	/*const char * testString = "hello world";
+	int bytes = write(fd,testString, sizeof(testString));
+	
+	
+	char buf[4];
+ 	read(fd, buf, bytes);
+
+	printf("%s", (char *)buf);
+	while(1) {}*/
+	//exit(0);
 }
