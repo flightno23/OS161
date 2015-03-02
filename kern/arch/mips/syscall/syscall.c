@@ -35,7 +35,7 @@
 #include <thread.h>
 #include <current.h>
 #include <syscall.h>
-
+#include <copyinout.h>
 
 /*
  * System call dispatcher.
@@ -138,9 +138,23 @@ syscall(struct trapframe *tf)
 		err = sys_getcwd((userptr_t)tf->tf_a0, &retval);
 		break;
 
-	    case SYS_lseek:
-		err = sys_lseek(&tf, &retval);
+	    case SYS_lseek: {
+		off_t retVal64 = 0;
+		off_t offset = ((off_t)tf->tf_a2 << 32) | tf->tf_a3;
+		int whence;
+ 
+		err = copyin((userptr_t)(tf->tf_sp+16),&whence, sizeof(whence)); // get whence from stack pointer address sp+16
+		
+		if (!err) {
+			err = sys_lseek(tf->tf_a0, offset, whence, &retVal64);
+			
+			if (!err) {
+				retval = retVal64 >> 32;
+				tf->tf_v1 = retVal64;
+			}	
+		}
 		break;
+		}
 		 
 	    default:
 		kprintf("Unknown syscall %d\n", callno);

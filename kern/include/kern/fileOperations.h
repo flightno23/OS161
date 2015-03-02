@@ -2,6 +2,7 @@
 #include <types.h>
 #include <vnode.h>
 #include <synch.h>
+
 #define MAX_FILENAME_LEN 256
 
 // the structure of the file handle
@@ -40,4 +41,5 @@ int sys_chdir(const_userptr_t pathname);
 int sys_getcwd(userptr_t buf, int * retval);
 
 /* sys_lseek function prototype */
-int sys_lseek(struct * tf, int * retval);
+int sys_lseek(int fd, off_t pos, int whence, off_t * retVal64);
+

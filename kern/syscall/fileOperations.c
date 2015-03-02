@@ -10,6 +10,7 @@
 #include <current.h> /* for the curthread variable */
 #include <vfs.h> /* for vfs_open, close , etc */
 #include <uio.h> /* for uio and iovec , this is for moving data from kernel to userspace and vice versa */
+#include <kern/seek.h> /* for seek operation lseek() */
 
 #define BUF_SIZE 255 /* maximum valid length of filename */
 
@@ -281,8 +282,66 @@ int sys_getcwd(userptr_t buf, int * retval){
 }
 
 /* lseek() call handler */
-int sys_lseek(struct * tf, int * retval){
+int sys_lseek(int fd, off_t pos, int whence, off_t * retVal64){
 	
+	int err;
+	off_t currentPosition;
+	off_t endPosition;
+	off_t posSeek;
+	struct stat buffer;
+	
+	/* Step 1: Check if the file descriptor passed in is valid */
+	if (fd >= OPEN_MAX || fd < 0) {	// fd is out of bounds of the file table
+		return EBADF;
+	} 
+
+	struct fhandle * fdesc = curthread->t_fdtable[fd];
+	if (fdesc == NULL) {
+		return EBADF;
+	}
+
+	
+	switch(whence) {	// logic for different cases
+		case SEEK_SET: //VOP_TRYSEEK(vnode, position)
+				if (pos < 0) return EINVAL;	// seek position is negative
+				posSeek = pos;
+				if ((err = VOP_TRYSEEK(fdesc->vn, posSeek)) != 0) {
+					return ESPIPE;	// in case the SEEK fails
+				}
+				fdesc->offset = posSeek;
+				*retVal64 = posSeek;
+				break;
+			
+		case SEEK_CUR:  currentPosition = fdesc->offset;
+				posSeek = currentPosition + pos;
+				
+				if (posSeek < 0) return EINVAL;
+				
+				if ((err = VOP_TRYSEEK(fdesc->vn, posSeek)) != 0) {
+					return ESPIPE;
+				}
+				fdesc->offset = posSeek;
+				*retVal64 = posSeek;
+				break;
+
+		case SEEK_END:  VOP_STAT(fdesc->vn, &buffer);
+				endPosition = buffer.st_size;
+				posSeek = endPosition + pos;
+				
+				if (posSeek < 0) return EINVAL;
+
+				if ((err = VOP_TRYSEEK(fdesc->vn, posSeek)) != 0) {
+					return ESPIPE;
+				}
+				fdesc->offset = posSeek;
+				*retVal64 = posSeek;
+				break;
+		default: 
+			return EINVAL; 
+	}
+	
+	return 0;
+
 }
 
 /* This function creates the file handle */
