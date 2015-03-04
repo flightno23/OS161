@@ -113,7 +113,8 @@ struct thread {
 	struct vnode *t_cwd;		/* current working directory */
 
 	/* add more here as needed */
-	struct fhandle * t_fdtable[OPEN_MAX];
+	struct fhandle * t_fdtable[OPEN_MAX];	// file table of the thread
+	/*pid_t thread_pid;*/	// process ID of the thread
 };
 
 

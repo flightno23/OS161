@@ -161,6 +161,7 @@ int sys_write(int fd, void *buf, size_t nbytes, int * retval){
 	
 	/* Calculate the amount of bytes written and return success to user (indicated by 0)*/
 	*retval = nbytes - user.uio_resid;
+	fdesc->offset += *retval; // move the offset by the amount of bytes written	
 
 	return 0;	
 }
@@ -211,6 +212,7 @@ int sys_read(int fd, void *buf, size_t nbytes, int * retval){
 	
 	/* Calculate the amount of bytes written and return success to user (indicated by 0)*/
 	*retval = nbytes - user.uio_resid;
+	fdesc->offset += *retval; 	// advance offset by amount of bytes read	
 
 	return 0;	
 }

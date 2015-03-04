@@ -42,15 +42,20 @@ main()
 	/*open test */
 	int fd;
 	fd = open("test",2|4);
-	close(fd);
-	/*const char * testString = "hello world";
-	int bytes = write(fd,testString, sizeof(testString));
-	
-	
-	char buf[4];
- 	read(fd, buf, bytes);
+	int newfd = 6;
+	dup2(fd, newfd);
+	//close(fd);
+	//const char * testString = "hello world";
+	//int bytes = write(fd,testString, sizeof(testString));
+	//long offset = lseek(fd, 2, 0);
+	//char cwd[255];
+	//getcwd(cwd, 255);
+	//printf("%ld", offset);
+	//printf("%d", bytes);
+	//char buf[4];
+ 	//read(fd, buf, bytes);
 
-	printf("%s", (char *)buf);
-	while(1) {}*/
-	//exit(0);
+	//printf("%s", (char *)buf);
+	//while(1) {}
+	exit(0);
 }
