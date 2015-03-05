@@ -14,6 +14,46 @@
 
 #define BUF_SIZE 255 /* maximum valid length of filename */
 
+/*Overloaded open() function for console initialization*/
+int sys_open(char * fileName, int flags, int mode, int * retval, int permission) {
+
+	struct vnode * node;
+	int err;
+	switch(permission) {
+		case STDIN_FILENO: {
+			err = vfs_open(fileName, flags, mode, &node);
+			// add code here to check if vnode returned successfully
+			if (err) {	// if vnode not successful, then return appropriate error to user
+				return err;
+			}	
+			*retval = 0;
+			curthread->t_fdtable[0] = fhandle_create(fileName, flags, 0, node);
+		}
+		
+		case STDOUT_FILENO: {
+			err = vfs_open(fileName, flags, mode, &node);
+			// add code here to check if vnode returned successfully
+			if (err) {	// if vnode not successful, then return appropriate error to user
+				return err;
+			}	
+			*retval = 1;
+			curthread->t_fdtable[1] = fhandle_create(fileName, flags, 0, node);
+		}
+		
+		case STDERR_FILENO: {
+			err = vfs_open(fileName, flags, mode, &node);
+			// add code here to check if vnode returned successfully
+			if (err) {	// if vnode not successful, then return appropriate error to user
+				return err;
+			}	
+			*retval = 2;
+			curthread->t_fdtable[2] = fhandle_create(fileName, flags, 0, node);
+		}
+	}
+	return 0;
+}
+
+/* normal open() function - called by user */
 int sys_open(const_userptr_t fileName, int flags, int * retval) {
 	
 	char fileNameFromUser[BUF_SIZE]; // file name from copyinstr
@@ -79,6 +119,7 @@ int sys_open(const_userptr_t fileName, int flags, int * retval) {
 		int bytes = buffer.st_size;
 		*retval = slot;
 		curthread->t_fdtable[slot] = fhandle_create(fileNameFromUser, flags, bytes, node);
+	
 	} else { /* case where append flag is not TRUE */
 	 	*retval = slot;
 		curthread->t_fdtable[slot] = fhandle_create(fileNameFromUser, flags, 0, node);

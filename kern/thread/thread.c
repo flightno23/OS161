@@ -158,7 +158,20 @@ thread_create(const char *name)
 	for (int i=0; i < OPEN_MAX; i++) {
 		thread->t_fdtable[i] = NULL;
 	}
+	
+	/* allocating a pid for the user process */	
+	int err = 0;
+	err = pid_alloc(&thread->t_pid);
 
+	if (err) {	// if process table is full, return NULL
+		kfree(thread);
+		return NULL;
+	}
+
+	/* in case pid is 1, then this is the first thread. So, create a process structure with ppid as -1 */
+	if (thread->t_pid == 1) {
+		process_create(-1, thread->t_pid, thread);
+	}
 
 	return thread;
 }
@@ -526,6 +539,15 @@ thread_fork(const char *name,
 	 * for the spllower() that will be done releasing it.
 	 */
 	newthread->t_iplhigh_count++;
+	
+
+	/* copying the file table before the thread is made runnable - added by girish */
+	for (int i=0; i < OPEN_MAX; i++) {
+		newthread->t_fdtable[i] = curthread->t_fdtable[i];
+	}
+	
+	/* create the process for the child thread and load it into the process array - added by girish */
+	process_create(pid_t curthread->t_pid, newthread);	// might want to do some error handling for this line
 
 	/* Set up the switchframe so entrypoint() gets called */
 	switchframe_init(newthread, entrypoint, data1, data2);

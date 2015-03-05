@@ -1,34 +1,38 @@
 
 /* Process Create Function */
-pid_t process_create(struct thread * selfThread) {
+int process_create(pid_t ppid, pid_t cpid, struct thread * selfThread) {
 	
 	/* initialize the process structure */	
-	pid_t retval;	
 	struct process * proc;
 	proc = kmalloc(sizeof(*proc));
-	proc->exitsem = sem_create("procsem", 0); 	
+	proc->exitcv = waitpidcv;
 	exited = false;
-	
-	/* find an empty slot in the process table and return the pid*/
-	for (int i=1; i< MAX_RUNNING_PROCS; i++) {
-		if (p_table[MAX_RUNNING_PROCS] == NULL) {
-			 p_table[MAX_RUNNING_PROCS] = proc;
-			 retval = i;
-			 break;
-		}
-	}
-	
 	proc->self = selfThread;
+	
+	/* initialize the process table with child's pid*/	
+	p_table[cpid] = proc;
 
-	return retval;
+	return 0;
 }
 
+
+/* pid allocator function */
+int pid_alloc(pid_t * pidValue) {
+	
+	for (int i=1; i < MAX_RUNNING_PROCS; i++) {
+		if (p_table[MAX_RUNNING_PROCS] == NULL) {
+			 *pidValue = i;
+			 return 0;	// return 0 upon success
+		}	
+	}
+
+	return 1;	// case of error, process table is full
+}
 
 /* Process Destroy Function*/
 void process_destroy(struct process * proc) {
 	
 	/* Destroy the process structure and set the p_table value of the corresponding process to NULL*/
-	sem_destroy(proc->exitsem);
 	p_table[MAX_RUNNING_PROCS] = NULL;
 	kfree(proc);
 
