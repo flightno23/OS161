@@ -1,16 +1,20 @@
 
 /* sys_exit function*/
 void sys_exit(int exitcode) {
-
-	struct process * proc;
-	proc = p_table[curthread->t_pid]
-	proc->exited = true;
-	proc->exitcode = _MK_WAIT(exitcode);
+		
+	/*set exited is true and fill in the exit code */
+	p_table[curthread->t_pid]->exited = true;
+	p_table[curthread->t_pid]->exitcode = _MK_WAIT(exitcode);
+	
+	/* acquire the lock and broadcast. Then, release the lock.*/
+	lock_acquire(waitpidlock);
+	cv_broadcast(waitpidcv, waitpidlock);
+	lock_release(waitpidlock);
 
 }
 
 /* waitpid function */
-pid_t sys_waitpid(pid_t childpid, userptr_t status, int options) {
+int sys_waitpid(pid_t childpid, userptr_t status, int options, int * retval) {
 
 	/* Step 1: check if status pointer is aligned and if its valid */
 
@@ -33,15 +37,18 @@ pid_t sys_waitpid(pid_t childpid, userptr_t status, int options) {
 	}
 
 	/* Step 5: Acquire the lock and then check on the child, if not exited continue waiting on cv*/
+	
 	lock_acquire(waitpidlock);
 	if (p_table[childpid]->exited == true) {
-		*status = p_table[childpid]->exitcode;
+		copyout((const void *)&p_table[childpid]->exitcode, status, sizeof(int));
+		*retval = childpid;
 		process_destroy(p_table[childpid]);	// create this function and make sure process table entry is also set to NULL
 	} else {
 		while (true) {
 			cv_wait(waitpidcv, waitpidlock);
 			if (p_table[childpid]->exited == true) {
-				*(int *)status = p_table[childpid]->exitcode;
+				copyout((const void *)&p_table[childpid]->exitcode, status, sizeof(int));
+				*retval = childpid;
 				process_destroy(p_table[childpid]);	// create this function and make sure process table entry is also set to NULL;
 				break;
 			}

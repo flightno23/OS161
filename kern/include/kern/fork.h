@@ -1,5 +1,4 @@
-#include <machine/trapframe.h> /* for access to the trapframe of the parent process */
-
+#include <machine/trapframe.h> // for the struct trapframe
 
 /* sys_fork funtion prototype */
 int sys_fork(struct trapframe tf, int * retval);

@@ -323,7 +323,7 @@ file      thread/spinlock.c
 file      thread/synch.c
 file      thread/thread.c
 file      thread/threadlist.c
-
+file	  thread/processManage.c
 #
 # Virtual memory system
 # (you will probably want to add stuff here while doing the VM assignment)
@@ -368,6 +368,8 @@ file      syscall/loadelf.c
 file      syscall/runprogram.c
 file      syscall/time_syscalls.c
 file	  syscall/fileOperations.c
+file	  syscall/fork.c
+file	  syscall/waitpidexit.c
 
 #
 # Startup and initialization

@@ -44,7 +44,7 @@
 #include <vfs.h>
 #include <syscall.h>
 #include <test.h>
-
+#include <kern/unistd.h> /* for console initialization */
 /*
  * Load program "progname" and start running it in usermode.
  * Does not return except on error.
@@ -96,11 +96,11 @@ runprogram(char *progname)
 	}
 
 	/* console initialization before going to USER MODE - achieved by calling the overloaded sys_open function */
-	char * consoleString = "con:";
+	char consoleString[] = "con:";
 	int retval;
-	sys_open(consoleString, O_RDONLY, 0664, &retval, STDIN_FILENO);
-	sys_open(consoleString, O_WRONLY, 0664, &retval, STDOUT_FILENO);
-	sys_open(consoleString, O_WRONLY, 0664, &retval, STDERR_FILENO);		
+	sys_openConsole(consoleString, O_RDONLY, 0664, &retval, STDIN_FILENO);
+	sys_openConsole(consoleString, O_WRONLY, 0664, &retval, STDOUT_FILENO);
+	sys_openConsole(consoleString, O_WRONLY, 0664, &retval, STDERR_FILENO);		
 
 	/* Warp to user mode. */
 	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,

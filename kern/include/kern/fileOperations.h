@@ -23,7 +23,7 @@ void fhandle_destroy(struct fhandle *);
 int sys_open(const_userptr_t fileName, int flags, int * retval);
 
 /* sys_open for console initialization */
-int sys_open(char * fileName, int flags, int mode, int * retval, int permission); 
+int sys_openConsole(char * fileName, int flags, int mode, int * retval, int permission); 
 
 /* sys_close function prototype */
 int sys_close(int fd);

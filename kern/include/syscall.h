@@ -29,7 +29,10 @@
 
 #ifndef _SYSCALL_H_
 #define _SYSCALL_H_
-#include <kern/fileOperations.h>
+#include <kern/fileOperations.h>   //all the file syscalls are defined in this file
+#include <kern/waitpidexit.h>      // waitpid and exit are defined in this file
+#include <kern/fork.h> 		   // fork is defined in this file
+
 
 struct trapframe; /* from <machine/trapframe.h> */
 

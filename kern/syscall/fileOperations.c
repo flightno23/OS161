@@ -11,11 +11,12 @@
 #include <vfs.h> /* for vfs_open, close , etc */
 #include <uio.h> /* for uio and iovec , this is for moving data from kernel to userspace and vice versa */
 #include <kern/seek.h> /* for seek operation lseek() */
+#include <kern/unistd.h> /* for console flags STDIN, STDOUT and STDERR */
 
 #define BUF_SIZE 255 /* maximum valid length of filename */
 
 /*Overloaded open() function for console initialization*/
-int sys_open(char * fileName, int flags, int mode, int * retval, int permission) {
+int sys_openConsole(char * fileName, int flags, int mode, int * retval, int permission) {
 
 	struct vnode * node;
 	int err;

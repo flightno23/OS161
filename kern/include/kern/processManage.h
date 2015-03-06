@@ -1,5 +1,5 @@
 #include <types.h> /* for the pid_t variable */
-#include <synch.h> /* to create the common semaphore */
+#include <synch.h> /* to create the common condition variable */
 
 #define MAX_RUNNING_PROCS 250
 
