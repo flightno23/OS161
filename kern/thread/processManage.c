@@ -1,4 +1,5 @@
 #include <kern/processManage.h>
+#include <lib.h>
 
 /* Process Create Function */
 int process_create(pid_t ppid, pid_t cpid, struct thread * selfThread) {
@@ -7,9 +8,9 @@ int process_create(pid_t ppid, pid_t cpid, struct thread * selfThread) {
 	struct process * proc;
 	proc = kmalloc(sizeof(*proc));
 	proc->exitcv = waitpidcv;
-	exited = false;
+	proc->exited = false;
 	proc->self = selfThread;
-	
+	proc->ppid = ppid;	
 	/* initialize the process table with child's pid*/	
 	p_table[cpid] = proc;
 

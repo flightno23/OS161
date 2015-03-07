@@ -1,10 +1,18 @@
 
+#include <types.h>
+#include <kern/waitpidexit.h>
+#include <synch.h>
+#include <current.h>
+#include <kern/errno.h>
+#include <copyinout.h>
+#include <kern/wait.h> /*for MK_WAIT function*/
+
 /* sys_exit function*/
 void sys_exit(int exitcode) {
 		
 	/*set exited is true and fill in the exit code */
 	p_table[curthread->t_pid]->exited = true;
-	p_table[curthread->t_pid]->exitcode = _MK_WAIT(exitcode);
+	p_table[curthread->t_pid]->exitcode = _MKWAIT_EXIT(exitcode);
 	
 	/* acquire the lock and broadcast. Then, release the lock.*/
 	lock_acquire(waitpidlock);

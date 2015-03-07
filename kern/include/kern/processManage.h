@@ -31,6 +31,6 @@ int pid_alloc(pid_t * pidValue);
 void process_destroy(struct process *);
 
 /* Initialize synch primitives for waitpid */
-void waitpid_init();
+void waitpid_init(void);
 
 
