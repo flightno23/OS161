@@ -79,6 +79,7 @@ int sys_open(const_userptr_t fileName, int flags, int * retval) {
 		case O_RDWR|O_CREAT: break;
 		case O_RDWR|O_APPEND: append_flag = true;
 					break;
+		case O_RDWR|O_CREAT|O_TRUNC: break;
 		default: err = EINVAL;
 			return err;
 	}
