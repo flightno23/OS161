@@ -1,3 +1,4 @@
+#include <kern/processManage.h>
 
 /* Process Create Function */
 int process_create(pid_t ppid, pid_t cpid, struct thread * selfThread) {
@@ -36,4 +37,10 @@ void process_destroy(struct process * proc) {
 	p_table[MAX_RUNNING_PROCS] = NULL;
 	kfree(proc);
 
+}
+
+/* Initialize synch primitives for waitpid */
+void waitpid_init(){
+	waitpidlock = lock_create("waitpid lock");
+	waitpidcv = cv_create("waitpid cv");
 }

@@ -547,7 +547,7 @@ thread_fork(const char *name,
 	}
 	
 	/* create the process for the child thread and load it into the process array - added by girish */
-	process_create(pid_t curthread->t_pid, newthread);	// might want to do some error handling for this line
+	process_create(curthread->t_pid,newthread->t_pid, newthread);	// might want to do some error handling for this line
 
 	/* Set up the switchframe so entrypoint() gets called */
 	switchframe_init(newthread, entrypoint, data1, data2);

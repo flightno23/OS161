@@ -4,8 +4,8 @@
 #define MAX_RUNNING_PROCS 250
 
 /*Common cv and lock to synchronize between processes */
-struct lock * waitpidlock = lock_create("waitpid lock");
-struct cv * waitpidcv = cv_create("waitpid cv");
+struct lock * waitpidlock;// = lock_create("waitpid lock");
+struct cv * waitpidcv;// = cv_create("waitpid cv");
 
 /* Structure of a process */
 struct process {
@@ -16,7 +16,7 @@ struct process {
 	int exitcode;	// exitcode sent by user
 	struct thread * self;	// pointer to the thread
 
-}
+};
 
 /* Global array of processes */
 struct process * p_table[MAX_RUNNING_PROCS];
@@ -30,5 +30,7 @@ int pid_alloc(pid_t * pidValue);
 /* Process destroy function prototype */
 void process_destroy(struct process *);
 
+/* Initialize synch primitives for waitpid */
+void waitpid_init();
 
 

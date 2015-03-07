@@ -5,6 +5,7 @@
 #include <kern/fork.h> /* to include the fork header file */
 #include <addrspace.h> /* to get the as_copy, as_activate functions */
 #include <lib.h> /* for the memcpy function */
+#include <kern/processManage.h>
 
 /* fork() funtion handler*/
 /* return value of 0 on success or else error code */

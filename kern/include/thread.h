@@ -46,7 +46,7 @@ struct vnode;
 
 /* get machine-dependent defs */
 #include <machine/thread.h>
-
+#include <kern/processManage.h>
 
 /* Size of kernel stacks; must be power of 2 */
 #define STACK_SIZE 4096
