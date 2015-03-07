@@ -20,35 +20,41 @@ int sys_openConsole(char * fileName, int flags, int mode, int * retval, int perm
 
 	struct vnode * node;
 	int err;
+	char * copyFileName;
+	copyFileName = kstrdup(fileName);
+
 	switch(permission) {
 		case STDIN_FILENO: {
-			err = vfs_open(fileName, flags, mode, &node);
+			err = vfs_open(copyFileName, flags, mode, &node);
 			// add code here to check if vnode returned successfully
 			if (err) {	// if vnode not successful, then return appropriate error to user
 				return err;
 			}	
 			*retval = 0;
 			curthread->t_fdtable[0] = fhandle_create(fileName, flags, 0, node);
+			break;
 		}
 		
 		case STDOUT_FILENO: {
-			err = vfs_open(fileName, flags, mode, &node);
+			err = vfs_open(copyFileName, flags, mode, &node);
 			// add code here to check if vnode returned successfully
 			if (err) {	// if vnode not successful, then return appropriate error to user
 				return err;
 			}	
 			*retval = 1;
 			curthread->t_fdtable[1] = fhandle_create(fileName, flags, 0, node);
+			break;		
 		}
 		
 		case STDERR_FILENO: {
-			err = vfs_open(fileName, flags, mode, &node);
+			err = vfs_open(copyFileName, flags, mode, &node);
 			// add code here to check if vnode returned successfully
 			if (err) {	// if vnode not successful, then return appropriate error to user
 				return err;
 			}	
 			*retval = 2;
 			curthread->t_fdtable[2] = fhandle_create(fileName, flags, 0, node);
+			break;
 		}
 	}
 	return 0;
