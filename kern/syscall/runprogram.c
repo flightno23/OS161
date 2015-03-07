@@ -105,7 +105,7 @@ runprogram(char *progname)
 	sys_openConsole(consoleString, O_WRONLY, 0664, &retval, STDERR_FILENO);		
 
 	/* Initialize the waitpid synch primitives */
-	waitpid_init();
+	// waitpid_init();
 
 	/* Warp to user mode. */
 	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,

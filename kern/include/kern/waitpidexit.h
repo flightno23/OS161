@@ -5,4 +5,6 @@ void sys_exit(int exitcode);
 /* sys_waitpid function prototype */
 int sys_waitpid(pid_t childpid, userptr_t status, int options, int * retval);
 
+/* sys_getpid function prototype*/
+void sys_getpid(int * retval);
     

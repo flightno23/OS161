@@ -44,6 +44,7 @@
 #include "opt-sfs.h"
 #include "opt-net.h"
 
+#include <kern/waitpidexit.h>
 /*
  * In-kernel menu and command dispatcher.
  */
@@ -51,6 +52,8 @@
 #define _PATH_SHELL "/bin/sh"
 
 #define MAXMENUARGS  16
+
+static int status; /*global exit status code is saved here*/
 
 // XXX this should not be in this file
 void
@@ -107,6 +110,8 @@ cmd_progthread(void *ptr, unsigned long nargs)
 		return;
 	}
 
+	sys_exit(status);	// to exit based on user exit code
+
 	/* NOTREACHED: runprogram only returns on error. */
 }
 
@@ -132,7 +137,7 @@ common_prog(int nargs, char **args)
 	kprintf("Warning: this probably won't work with a "
 		"synchronization-problems kernel.\n");
 #endif
-
+	waitpid_init();		// to declare the two primitives for exit and wait pid
 	result = thread_fork(args[0] /* thread name */,
 			cmd_progthread /* thread function */,
 			args /* thread arg */, nargs /* thread arg */,
@@ -141,7 +146,10 @@ common_prog(int nargs, char **args)
 		kprintf("thread_fork failed: %s\n", strerror(result));
 		return result;
 	}
-
+	
+	int retval;
+	sys_waitpid(2, (userptr_t)&status, 0, &retval);
+	 
 	return 0;
 }
 
