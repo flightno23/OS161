@@ -6,6 +6,7 @@
 #include <kern/errno.h>
 #include <copyinout.h>
 #include <kern/wait.h> /*for MK_WAIT function*/
+#include <thread.h> /* for exiting the thread */
 
 /* sys_exit function*/
 void sys_exit(int exitcode) {
@@ -16,8 +17,23 @@ void sys_exit(int exitcode) {
 	
 	/* acquire the lock and broadcast. Then, release the lock.*/
 	lock_acquire(waitpidlock);
+	pid_t ppid = p_table[curthread->t_pid]->ppid;
+
+	if (ppid == -1) {
+		process_destroy(p_table[curthread->t_pid]);
+		p_table[curthread->t_pid] = NULL;
+		thread_exit();
+	}
+	
+	if (p_table[ppid] == NULL || p_table[ppid]->exited == true) {
+		process_destroy(p_table[curthread->t_pid]);
+		p_table[curthread->t_pid] = NULL;
+		thread_exit();
+	}
+	
 	cv_broadcast(waitpidcv, waitpidlock);
 	lock_release(waitpidlock);
+	thread_exit();
 
 }
 

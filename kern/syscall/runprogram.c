@@ -99,6 +99,7 @@ runprogram(char *progname)
 	/* console initialization before going to USER MODE - achieved by calling the overloaded sys_open function */
 
 	int retval;
+	char consoleString[] = "con:";
 	sys_openConsole(consoleString, O_RDONLY, 0664, &retval, STDIN_FILENO);
 	sys_openConsole(consoleString, O_WRONLY, 0664, &retval, STDOUT_FILENO);
 	sys_openConsole(consoleString, O_WRONLY, 0664, &retval, STDERR_FILENO);		
