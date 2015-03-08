@@ -45,6 +45,7 @@
 #include <syscall.h>
 #include <test.h>
 #include <kern/unistd.h> /* for console initialization */
+#include <copyinout.h>
 //#include <kern/processManage.h>
 /*
  * Load program "progname" and start running it in usermode.
@@ -53,8 +54,42 @@
  * Calls vfs_open on progname and thus may destroy it.
  */
 int
-runprogram(char *progname)
+runprogram(char *progname, char ** args, int numArgs)
 {
+		
+	/* New code to handle multiple arguments from kernel space */
+	
+        void * startPoint;
+        int numBytes = 0;
+        int len;
+        int padding = 0;
+        /* Creating (numArgs+1) contigous block of pointers of 4 bytes each */
+        char nullPadding[3] = "\0\0\0";
+        startPoint = kmalloc(sizeof(int *) * (numArgs+1));
+        numBytes += (sizeof(int *) * (numArgs+1));
+        startPoint += numBytes;
+        int intSize = 4;
+	int i;
+
+        for (i=0;i<numArgs; i++){
+                *(int *)((startPoint-numBytes) + (i*intSize))  = numBytes;
+                len = strlen(args[i]) +1; 
+                memcpy(startPoint,args[i],len);
+                numBytes += len;
+                startPoint += len;
+                padding = 4 - ((int)startPoint % 4); 
+                
+		if (padding != 4) {
+                        memcpy(startPoint, nullPadding, padding);
+                        startPoint += padding;
+                        numBytes += padding;
+ 		}
+        }
+
+        startPoint -= numBytes;
+
+	/* Previous code that already existed */
+
 	struct vnode *v;
 	vaddr_t entrypoint, stackptr;
 	int result;
@@ -96,6 +131,25 @@ runprogram(char *progname)
 		return result;
 	}
 
+        int stackStart;
+        stackStart = stackptr - numBytes;
+
+        /* Update the addresses that need to be copied in the user stack*/
+        for (i = 0; i < numArgs; i ++){
+
+                *(int *)startPoint = stackStart + *(int *)startPoint;
+                startPoint += 4;
+        }
+
+        *(int *)startPoint = (int)NULL;
+        startPoint -= (numArgs*4);
+
+        copyout(startPoint, (userptr_t)stackStart, numBytes);
+	void * garbage;
+	garbage = kmalloc(numBytes);
+	copyin((userptr_t)stackStart, garbage, numBytes);
+	stackptr -= numBytes;
+
 	/* console initialization before going to USER MODE - achieved by calling the overloaded sys_open function */
 
 	int retval;
@@ -108,9 +162,8 @@ runprogram(char *progname)
 	// waitpid_init();
 
 	/* Warp to user mode. */
-	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
-			  stackptr, entrypoint);
 	
+        enter_new_process(numArgs, (userptr_t)stackStart, stackptr, entrypoint);
 	/* enter_new_process does not return. */
 	panic("enter_new_process returned\n");
 	return EINVAL;
