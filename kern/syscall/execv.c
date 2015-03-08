@@ -8,43 +8,50 @@
 
 int sys_execv(const_userptr_t progname, userptr_t args){
 	
-	int result;
-	int numArgs = 0;
-	char *dest;
+	
+	/* Step 1: get the program name from the user */
+	
 	char progNameFromUser[BUFFER_SIZE];
- 	
-	/*Check the validity of arguments*/
-
-	/* Copying the program name */
+	int result = 0;
 	size_t actual;
 	if ((result = copyinstr(progname, progNameFromUser, BUFFER_SIZE, &actual)) != 0){
 		return result;
 	}
 
-	/* Copying the user arguments and count the number of arguments*/
-	int padding = 0;
+	/* Step 2: get the number of arguments from userspace */
+	int numArgs = 0;
+	int random;
 	
-	dest = kmalloc (sizeof(char));
-	copyin (args, dest, sizeof(char));
-	while (dest != NULL) {	
-		
-		if (*dest == '\0') {
-			numArgs++;
-			padding = 4 - ((int)dest % 4);
-			
-			if (padding != 4) {
-				for (int j=0; j < padding; j++) {
-					dest++;
-					dest = kmalloc(sizeof(char));
-					*dest = '\0';
-				}
-			}
-		}
-
-		dest++;
-		dest = kmalloc(sizeof(char));
-		copyin (args, dest, sizeof(char));
+	
+	int i = 0;
+	while (*(char **)(args+i) != NULL) {
+		copyin(args+i, &random, sizeof(int));
+		numArgs++;
+		i += 4;
 	}
+	
+	numArgs--;	
+	char * commands[numArgs];
+	int pointersToGet[numArgs];
+	int j = 4;
+	for (int i=0; i < numArgs; i++) {
+		copyin(args + (j*i), &pointersToGet[i], sizeof(int));
+		copyinstr((userptr_t)pointersToGet[i] , commands[i], 100, &actual); 
+	}
+
+	
+	
+	 
+
+
+
+
+
+
+
+
+
+
 	
 	return 0;	
 }
