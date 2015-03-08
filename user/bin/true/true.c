@@ -43,7 +43,7 @@ main()
 
 
 	/* test to simulate an exec */
-	const char * arguments[3] = {"cat", "dog", "elephant"};
+	const char * arguments[3] = {"ca", "dog", "elephant"};
 	const char program[] = "/bin/true";
 
 	execv(program, (char **) arguments);

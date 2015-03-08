@@ -35,23 +35,35 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	int pointersToGet[numArgs];
 	int j = 4;
 	for (int i=0; i < numArgs; i++) {
+		commands[i] = kmalloc(100*sizeof(char));
 		copyin(args + (j*i), &pointersToGet[i], sizeof(int));
 		copyinstr((userptr_t)pointersToGet[i] , commands[i], 100, &actual); 
 	}
 
+	void * startPoint;
+	int numBytes = 0;
+	int len;
+	int padding = 0;
+	/* Creating (numArgs+1) contigous block of pointers of 4 bytes each */
+	char nullPadding[3] = "\0\0\0";
+	startPoint = kmalloc(sizeof(int *) * (numArgs+1));
+	numBytes += (sizeof(int *) * (numArgs+1));
+	startPoint += numBytes;
+	int intSize = 4;
+
+	for (i=0;i<numArgs; i++){
+		*(int *)((startPoint-numBytes) + (i*intSize))  = numBytes;
+		len = strlen(commands[i]) +1;
+		memcpy(startPoint,commands[i],len);
+		numBytes += len;
+		startPoint += len;
+		padding = 4 - ((int)startPoint % 4);
+		if (padding != 4) {
+			memcpy(startPoint, nullPadding, padding);
+			startPoint += padding;
+			numBytes += padding;
+		}  		
+	}
 	
-	
-	 
-
-
-
-
-
-
-
-
-
-
-	
-	return 0;	
+	return 0; 
 }
