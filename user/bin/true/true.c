@@ -40,10 +40,19 @@ main()
 {
 	/* Just exit with success. */
 	/*open test */
-	int fd;
+
+
+	/* test to simulate an exec */
+	const char * arguments[3] = {"cat", "dog", "elephant"};
+	const char program[] = "/bin/true";
+
+	execv(program, (char **) arguments);
+	
+
+	/*int fd;
 	fd = open("test",2|4);
 	int newfd = 6;
-	dup2(fd, newfd);
+	dup2(fd, newfd); */
 	//close(fd);
 	//const char * testString = "hello world";
 	//int bytes = write(fd,testString, sizeof(testString));

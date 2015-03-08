@@ -370,6 +370,7 @@ file      syscall/time_syscalls.c
 file	  syscall/fileOperations.c
 file	  syscall/fork.c
 file	  syscall/waitpidexit.c
+file	  syscall/execv.c
 
 #
 # Startup and initialization

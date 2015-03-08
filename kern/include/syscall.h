@@ -32,7 +32,7 @@
 #include <kern/fileOperations.h>   //all the file syscalls are defined in this file
 #include <kern/waitpidexit.h>      // waitpid and exit are defined in this file
 #include <kern/fork.h> 		   // fork is defined in this file
-
+#include <kern/execv.h> // execv is defined here
 
 struct trapframe; /* from <machine/trapframe.h> */
 
