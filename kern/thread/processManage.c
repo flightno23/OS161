@@ -44,4 +44,5 @@ void process_destroy(struct process * proc) {
 void waitpid_init(){
 	waitpidlock = lock_create("waitpid lock");
 	waitpidcv = cv_create("waitpid cv");
+	p_table[1]->exitcv = waitpidcv;
 }

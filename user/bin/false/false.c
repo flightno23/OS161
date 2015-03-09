@@ -29,6 +29,7 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 /*
  * false - fail.
@@ -41,5 +42,7 @@ int
 main()
 {
 	/* Just exit with a failure code. */
+	int pid = fork();
+	printf("%d", pid);
 	exit(1);
 }
