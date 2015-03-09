@@ -28,7 +28,7 @@ int process_create(pid_t ppid, pid_t cpid, struct thread * selfThread);
 int pid_alloc(pid_t * pidValue);
 
 /* Process destroy function prototype */
-void process_destroy(struct process *);
+void process_destroy(pid_t pidValue);
 
 /* Initialize synch primitives for waitpid */
 void waitpid_init(void);

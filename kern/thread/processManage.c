@@ -32,11 +32,12 @@ int pid_alloc(pid_t * pidValue) {
 }
 
 /* Process Destroy Function*/
-void process_destroy(struct process * proc) {
+void process_destroy(pid_t pidValue) {
 	
 	/* Destroy the process structure and set the p_table value of the corresponding process to NULL*/
-	p_table[MAX_RUNNING_PROCS] = NULL;
-	kfree(proc);
+	struct process * procToDestroy = p_table[pidValue];
+	kfree(procToDestroy);
+	p_table[pidValue] = NULL;
 
 }
 

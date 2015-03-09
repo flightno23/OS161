@@ -21,6 +21,8 @@ int sys_fork(struct trapframe * tf, int * retval) {
 	*tfChild = *tf;	
 	err = thread_fork("new thread", child_forkentry,tfChild,(unsigned long)addressChild, &newThread);
 	if (err) {
+		kfree(tfChild);
+		kfree(addressChild);	
 		return err;	// in case the fork failed
 	}
 	
