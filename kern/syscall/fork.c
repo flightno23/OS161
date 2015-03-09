@@ -16,9 +16,10 @@ int sys_fork(struct trapframe * tf, int * retval) {
 	/*call thread_fork using the child_forkentry function and the trapframe and address spaces as the arguments*/
 	struct addrspace * addressChild;
 	as_copy(curthread->t_addrspace, &addressChild);
-	struct trapframe tfChild;
-	tfChild = *tf;
-	err = thread_fork("new thread", child_forkentry,&tf,(unsigned long)addressChild, &newThread);
+	
+	struct trapframe * tfChild = (struct trapframe *)kmalloc(sizeof(struct trapframe));
+	*tfChild = *tf;	
+	err = thread_fork("new thread", child_forkentry,tfChild,(unsigned long)addressChild, &newThread);
 	if (err) {
 		return err;	// in case the fork failed
 	}
@@ -34,10 +35,10 @@ data2 - address space of the parent */
 void child_forkentry(void * data1, unsigned long data2) {
 
 	/* Step 1: Modify the trapframe for the child to make it look like a success for the child */
-	struct trapframe * data1Copy = (struct trapframe *)data1;
+	/*struct trapframe * data1Copy = (struct trapframe *)data1;
 	data1Copy->tf_a3 = 0;
 	data1Copy->tf_v0 = 0;
-	data1Copy->tf_epc += 4;
+	data1Copy->tf_epc += 4;*/
 	
 	/* Step 2: Load and activate the address space of the child */
 
@@ -46,7 +47,10 @@ void child_forkentry(void * data1, unsigned long data2) {
 	
 	/* Step 3: Declare a struct trapframe and copy the contents of the trapframe passed in onto the new trapframe */
 	struct trapframe tf;
-	tf = *data1Copy;
+	tf = *(struct trapframe *)data1;
+	tf.tf_a3 = 0;
+	tf.tf_v0 = 0;
+	tf.tf_epc += 4;
 	/* Step 4: Call mips_usermode and return to user mode */
 	mips_usermode(&tf);
 }

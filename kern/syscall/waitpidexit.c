@@ -16,7 +16,6 @@ void sys_exit(int exitcode) {
 	p_table[curthread->t_pid]->exitcode = _MKWAIT_EXIT(exitcode);
 	
 	/* acquire the lock and broadcast. Then, release the lock.*/
-	lock_acquire(waitpidlock);
 	pid_t ppid = p_table[curthread->t_pid]->ppid;
 
 	if (ppid == -1) {
@@ -31,6 +30,7 @@ void sys_exit(int exitcode) {
 		thread_exit();
 	}
 	
+	lock_acquire(waitpidlock);
 	cv_broadcast(waitpidcv, waitpidlock);
 	lock_release(waitpidlock);
 	thread_exit();
