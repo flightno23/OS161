@@ -145,9 +145,6 @@ runprogram(char *progname, char ** args, int numArgs)
         startPoint -= (numArgs*4);
 
         copyout(startPoint, (userptr_t)stackStart, numBytes);
-	void * garbage;
-	garbage = kmalloc(numBytes);
-	copyin((userptr_t)stackStart, garbage, numBytes);
 	stackptr -= numBytes;
 
 	/* console initialization before going to USER MODE - achieved by calling the overloaded sys_open function */

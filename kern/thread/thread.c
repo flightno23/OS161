@@ -154,10 +154,6 @@ thread_create(const char *name)
 
 	/* If you add to struct thread, be sure to initialize here */
 	
-	/* initializing all elements of the file table to NULL initially*/
-	for (int i=0; i < OPEN_MAX; i++) {
-		thread->t_fdtable[i] = NULL;
-	}
 	
 	/* allocating a pid for the user process */	
 	int err = 0;
@@ -166,6 +162,11 @@ thread_create(const char *name)
 	if (err) {	// if process table is full, return NULL
 		kfree(thread);
 		return NULL;
+	}
+
+	/* initializing all elements of the file table to NULL initially*/
+	for (int i=0; i < OPEN_MAX; i++) {
+		thread->t_fdtable[i] = NULL;
 	}
 
 	/* in case pid is 1, then this is the first thread. So, create a process structure with ppid as -1 */

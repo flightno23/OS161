@@ -6,7 +6,7 @@
 #include <kern/stat.h> /* for getting the file size through VOP_STAT */
 #include <copyinout.h> /* for using the copyinstr function */
 #include <kern/fcntl.h> /* for the O_RDONLY and the other flags */
-#include <kern/limits.h>  /* for the OPEN_MAX constant */
+#include <kern/limits.h>  /* for the OPEN_MAX - allows 128 open files constant */
 #include <current.h> /* for the curthread variable */
 #include <vfs.h> /* for vfs_open, close , etc */
 #include <uio.h> /* for uio and iovec , this is for moving data from kernel to userspace and vice versa */
@@ -142,11 +142,13 @@ int sys_open(const_userptr_t fileName, int flags, int * retval) {
 int sys_close(int fd) {
 	
 	/* check if fd is a valid file handle first */
-	if (fd >= OPEN_MAX) {	// to avoid fd's that have values > than OPEN_MAX
+	if (fd >= OPEN_MAX || fd < 0) {	// to avoid fd's that have values > than OPEN_MAX or negative values
 		return EBADF;
-		if (curthread->t_fdtable[fd] == NULL) {	// to avoid fd's whose entries are already NULL
-			return EBADF;
-		}
+	}
+
+	
+	if (curthread->t_fdtable[fd] == NULL) {	// to avoid fd's whose entries are already NULL
+		return EBADF;
 	}
 
 	/* check if file handle at that position has an ref_count of 1*/
@@ -182,7 +184,7 @@ int sys_write(int fd, void *buf, size_t nbytes, int * retval){
 	
 	struct fhandle * fdesc;
 	fdesc = curthread->t_fdtable[fd];
-	
+		
 	if (fdesc->flags == O_RDONLY) {
 		return EBADF;
 	} 
@@ -192,7 +194,8 @@ int sys_write(int fd, void *buf, size_t nbytes, int * retval){
 		return EFAULT;
 	}
 	
-	
+	/* Synchronizing the write to the file */
+	lock_acquire(fdesc->lock);
 	/* Step 4: Initialize iovec and uio with uio_kinit and correct arguments */
 	struct iovec iov;
 	struct uio user;
@@ -211,7 +214,9 @@ int sys_write(int fd, void *buf, size_t nbytes, int * retval){
 	/* Calculate the amount of bytes written and return success to user (indicated by 0)*/
 	*retval = nbytes - user.uio_resid;
 	fdesc->offset += *retval; // move the offset by the amount of bytes written	
-
+	
+	/* release the lock */
+	lock_release(fdesc->lock);
 	return 0;	
 }
 
@@ -243,6 +248,8 @@ int sys_read(int fd, void *buf, size_t nbytes, int * retval){
 		return EFAULT;
 	}
 	
+	/* Synchronizing the read operation */
+	lock_acquire(fdesc->lock);
 	
 	/* Step 4: Initialize iovec and uio with uio_kinit and correct arguments */
 	struct iovec iov;
@@ -262,6 +269,9 @@ int sys_read(int fd, void *buf, size_t nbytes, int * retval){
 	/* Calculate the amount of bytes written and return success to user (indicated by 0)*/
 	*retval = nbytes - user.uio_resid;
 	fdesc->offset += *retval; 	// advance offset by amount of bytes read	
+	
+	/* releasing the lock*/
+	lock_release(fdesc->lock);
 
 	return 0;	
 }
@@ -271,7 +281,12 @@ int sys_dup2(int oldfd, int newfd, int * retval) {
 
 
 	/* Check the validity of arguments*/
-	if(oldfd >= OPEN_MAX || oldfd < 0 || newfd >= OPEN_MAX || newfd < 0 ){
+	if (oldfd >= OPEN_MAX || oldfd < 0 || newfd >= OPEN_MAX || newfd < 0 ){
+		return EBADF;
+	}
+	
+	/* checking if there is an oldfd that is already opened */
+	if (curthread->t_fdtable[oldfd] == NULL) {
 		return EBADF;
 	}
 
@@ -351,45 +366,66 @@ int sys_lseek(int fd, off_t pos, int whence, off_t * retVal64){
 		return EBADF;
 	}
 
-	
+	/* Adding locks to synchronize the whole process */
+	lock_acquire(fdesc->lock);		
 	switch(whence) {	// logic for different cases
 		case SEEK_SET: //VOP_TRYSEEK(vnode, position)
-				if (pos < 0) return EINVAL;	// seek position is negative
+				if (pos < 0) {
+					lock_release(fdesc->lock);	
+					return EINVAL;	// seek position is negative
+				}
+	
 				posSeek = pos;
 				if ((err = VOP_TRYSEEK(fdesc->vn, posSeek)) != 0) {
+					lock_release(fdesc->lock);
 					return ESPIPE;	// in case the SEEK fails
 				}
 				fdesc->offset = posSeek;
-				*retVal64 = posSeek;
+				*retVal64 = fdesc->offset;
 				break;
 			
 		case SEEK_CUR:  currentPosition = fdesc->offset;
 				posSeek = currentPosition + pos;
 				
-				if (posSeek < 0) return EINVAL;
-				
+				if (posSeek < 0) {
+					lock_release(fdesc->lock);
+					return EINVAL;
+				}
+	
 				if ((err = VOP_TRYSEEK(fdesc->vn, posSeek)) != 0) {
+					lock_release(fdesc->lock);
 					return ESPIPE;
 				}
 				fdesc->offset = posSeek;
-				*retVal64 = posSeek;
+				*retVal64 = fdesc->offset;
 				break;
 
 		case SEEK_END:  VOP_STAT(fdesc->vn, &buffer);
 				endPosition = buffer.st_size;
 				posSeek = endPosition + pos;
 				
-				if (posSeek < 0) return EINVAL;
+				if (posSeek < 0) {
+					lock_release(fdesc->lock);
+					return EINVAL;
+				}
 
 				if ((err = VOP_TRYSEEK(fdesc->vn, posSeek)) != 0) {
+					lock_release(fdesc->lock);
 					return ESPIPE;
 				}
-				fdesc->offset = posSeek;
-				*retVal64 = posSeek;
+				
+				if (pos < 0) {
+					fdesc->offset = posSeek;
+				} else {
+					fdesc->offset = endPosition;
+				}
+
+				*retVal64 = fdesc->offset;
 				break;
 		default: 
 			return EINVAL; 
 	}
+	lock_release(fdesc->lock);
 	
 	return 0;
 

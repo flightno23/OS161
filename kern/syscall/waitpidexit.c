@@ -14,24 +14,10 @@ void sys_exit(int exitcode) {
 	/*set exited is true and fill in the exit code */
 	lock_acquire(waitpidlock);
 	p_table[curthread->t_pid]->exited = true;
-	p_table[curthread->t_pid]->exitcode = _MKWAIT_EXIT(exitcode);
-	
-	/* acquire the lock and broadcast. Then, release the lock.*/
-	pid_t ppid = p_table[curthread->t_pid]->ppid;
-	if (ppid == -1) {
-		process_destroy(curthread->t_pid);
-		thread_exit();
-	}
-	
-	if (p_table[ppid] == NULL || p_table[ppid]->exited == true) {
-		process_destroy(curthread->t_pid);
-		thread_exit();
-	}
-	lock_release(waitpidlock);	
-
-	lock_acquire(waitpidlock);
+	p_table[curthread->t_pid]->exitcode = _MKWAIT_EXIT(exitcode);	
 	cv_broadcast(waitpidcv, waitpidlock);
 	lock_release(waitpidlock);
+	
 	thread_exit();
 
 }

@@ -22,7 +22,7 @@ int sys_fork(struct trapframe * tf, int * retval) {
 	err = thread_fork("new thread", child_forkentry,tfChild,(unsigned long)addressChild, &newThread);
 	if (err) {
 		kfree(tfChild);
-		kfree(addressChild);	
+		as_destroy(addressChild);	
 		return err;	// in case the fork failed
 	}
 	
@@ -53,6 +53,7 @@ void child_forkentry(void * data1, unsigned long data2) {
 	tf.tf_a3 = 0;
 	tf.tf_v0 = 0;
 	tf.tf_epc += 4;
+	kfree(data1);
 	/* Step 4: Call mips_usermode and return to user mode */
 	mips_usermode(&tf);
 }

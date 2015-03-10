@@ -1,5 +1,6 @@
 #include <kern/processManage.h>
 #include <lib.h>
+#include <kern/errno.h>
 
 /* Process Create Function */
 int process_create(pid_t ppid, pid_t cpid, struct thread * selfThread) {
@@ -28,7 +29,7 @@ int pid_alloc(pid_t * pidValue) {
 		}	
 	}
 
-	return 1;	// case of error, process table is full
+	return ENPROC;	// case of error, process table is full
 }
 
 /* Process Destroy Function*/
