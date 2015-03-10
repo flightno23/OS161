@@ -50,7 +50,7 @@
 
 #include "opt-synchprobs.h"
 #include "opt-defaultscheduler.h"
-
+#include <kern/fileOperations.h> // for the file handle structure 
 
 /* Magic number used as a guard value on kernel thread stacks. */
 #define THREAD_STACK_MAGIC 0xbaadf00d
@@ -545,6 +545,11 @@ thread_fork(const char *name,
 	/* copying the file table before the thread is made runnable - added by girish */
 	for (int i=0; i < OPEN_MAX; i++) {
 		newthread->t_fdtable[i] = curthread->t_fdtable[i];
+		if (curthread->t_fdtable[i] != NULL) {
+			struct fhandle * fdesc;
+			fdesc = curthread->t_fdtable[i];
+			fdesc->ref_count += 1;
+		}
 	}
 	
 	/* create the process for the child thread and load it into the process array - added by girish */
@@ -846,6 +851,19 @@ thread_exit(void)
 
 	/* Check the stack guard band. */
 	thread_checkstack(cur);
+	
+	/* decreasing the ref_count of file handles and freeing them if necessary */
+	for (int i=0; i < OPEN_MAX; i++) {
+		if (cur->t_fdtable[i] != NULL) {
+			struct fhandle * fdesc = cur->t_fdtable[i];
+			fdesc->ref_count--;
+			if (fdesc->ref_count == 0){
+				fhandle_destroy(fdesc);
+				cur->t_fdtable[i] = NULL;
+			}
+			
+		}
+	}
 
 	/* Interrupts off on this processor */
         splhigh();

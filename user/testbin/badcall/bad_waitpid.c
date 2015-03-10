@@ -40,6 +40,8 @@
 #include "config.h"
 #include "test.h"
 
+#include <stdio.h> // for debugging - added by me
+
 static
 void
 wait_badpid(int pid, const char *desc)
@@ -159,7 +161,7 @@ wait_siblings_child(void)
 	int pids[2], mypid, otherpid, fd, rv, x;
 
 	mypid = getpid();
-
+	printf("SIBLINGS CHILD - panic about to happen .. beware");	
 	fd = open(TESTFILE, O_RDONLY);
 	if (fd<0) {
 		warn("UH-OH: child process (pid %d) can't open %s",
@@ -238,7 +240,7 @@ wait_siblings(void)
 		wait_siblings_child();
 		_exit(0);
 	}
-
+	printf("culprit");
 	rv = write(fd, pids, sizeof(pids));
 	if (rv < 0) {
 		warn("UH-OH: write error on %s", TESTFILE);

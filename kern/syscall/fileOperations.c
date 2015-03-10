@@ -415,9 +415,9 @@ int sys_lseek(int fd, off_t pos, int whence, off_t * retVal64){
 				}
 				
 				if (pos < 0) {
-					fdesc->offset = posSeek;
+					fdesc->offset = posSeek + pos;
 				} else {
-					fdesc->offset = endPosition;
+					fdesc->offset = posSeek;
 				}
 
 				*retVal64 = fdesc->offset;

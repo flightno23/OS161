@@ -111,7 +111,7 @@ cmd_progthread(void *ptr, unsigned long nargs)
 		return;
 	}
 
-	sys_exit(status);	// to exit based on user exit code
+	sys_exit(0);	// to exit based on user exit code
 
 	/* NOTREACHED: runprogram only returns on error. */
 }

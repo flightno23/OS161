@@ -6,6 +6,7 @@
 /*Common cv and lock to synchronize between processes */
 struct lock * waitpidlock;// = lock_create("waitpid lock");
 struct cv * waitpidcv;// = cv_create("waitpid cv");
+struct lock * p_tablelock;
 
 /* Structure of a process */
 struct process {

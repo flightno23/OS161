@@ -5,6 +5,7 @@
 #include <kern/fork.h> /* to include the fork header file */
 #include <addrspace.h> /* to get the as_copy, as_activate functions */
 #include <lib.h> /* for the memcpy function */
+#include <kern/errno.h> /* for error values */
 // #include <kern/processManage.h>
 
 /* fork() funtion handler*/
@@ -15,14 +16,22 @@ int sys_fork(struct trapframe * tf, int * retval) {
 	struct thread * newThread;
 	/*call thread_fork using the child_forkentry function and the trapframe and address spaces as the arguments*/
 	struct addrspace * addressChild;
-	as_copy(curthread->t_addrspace, &addressChild);
-	
+	err = as_copy(curthread->t_addrspace, &addressChild);
+	/*if (err) {
+		as_destroy(addressChild);
+		return err;
+	}*/
 	struct trapframe * tfChild = (struct trapframe *)kmalloc(sizeof(struct trapframe));
-	*tfChild = *tf;	
+	*tfChild = *tf;
+	if (tfChild == NULL) {
+		return ENOMEM;
+	}
+		
 	err = thread_fork("new thread", child_forkentry,tfChild,(unsigned long)addressChild, &newThread);
 	if (err) {
-		kfree(tfChild);
-		as_destroy(addressChild);	
+		kfree(tfChild);		// free the child's trapframe as fork failed
+		as_destroy(addressChild);	// destroy the copied address space as fork failed
+		*retval = -1;	// if fork fails, return -1	
 		return err;	// in case the fork failed
 	}
 	

@@ -46,5 +46,6 @@ void process_destroy(pid_t pidValue) {
 void waitpid_init(){
 	waitpidlock = lock_create("waitpid lock");
 	waitpidcv = cv_create("waitpid cv");
+	p_tablelock = lock_create("ptable lock");
 	p_table[1]->exitcv = waitpidcv;
 }

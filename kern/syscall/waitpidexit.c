@@ -15,6 +15,8 @@ void sys_exit(int exitcode) {
 	lock_acquire(waitpidlock);
 	p_table[curthread->t_pid]->exited = true;
 	p_table[curthread->t_pid]->exitcode = _MKWAIT_EXIT(exitcode);	
+	
+	/* Broadcast on the wait channel that I have exited*/
 	cv_broadcast(waitpidcv, waitpidlock);
 	lock_release(waitpidlock);
 	
@@ -52,18 +54,19 @@ int sys_waitpid(pid_t childpid, userptr_t status, int options, int * retval) {
 		copyout((const void *)&p_table[childpid]->exitcode, status, sizeof(int));
 		*retval = childpid;
 		process_destroy(childpid);	// create this function and make sure process table entry is also set to NULL
-	} else {
-		while (true) {
+	} 
+	else {
+		while (p_table[childpid]->exited != true) {
 			cv_wait(waitpidcv, waitpidlock);
-			if (p_table[childpid]->exited == true) {
-				copyout((const void *)&p_table[childpid]->exitcode, status, sizeof(int));
-				*retval = childpid;
-				process_destroy(childpid);	// create this function and make sure process table entry is also set to NULL;
-				break;
-			}
 		}
+		
+		//lock_acquire(waitpidlock);
+		copyout((const void *)&p_table[childpid]->exitcode, status, sizeof(int));
+		*retval = childpid;
+		process_destroy(childpid);	// create this function and make sure process table entry is also set to NULL;
 	}
 	lock_release(waitpidlock);	// finally release the lock
+	
 	return 0;
 	
 }
