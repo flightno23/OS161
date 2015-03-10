@@ -15,12 +15,12 @@ int sys_fork(struct trapframe * tf, int * retval) {
 	int err;
 	struct thread * newThread;
 	/*call thread_fork using the child_forkentry function and the trapframe and address spaces as the arguments*/
-	struct addrspace * addressChild;
+	struct addrspace * addressChild = NULL;
 	err = as_copy(curthread->t_addrspace, &addressChild);
-	/*if (err) {
-		as_destroy(addressChild);
+	if (err) {
+		*retval = -1;
 		return err;
-	}*/
+	}
 	struct trapframe * tfChild = (struct trapframe *)kmalloc(sizeof(struct trapframe));
 	*tfChild = *tf;
 	if (tfChild == NULL) {
