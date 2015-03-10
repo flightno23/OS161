@@ -31,21 +31,31 @@ int sys_waitpid(pid_t childpid, userptr_t status, int options, int * retval) {
 
 	/* step 2: check if the options are valid */
 	if (options != 0) {
+		*retval = -1;
 		return EINVAL;
 	}
 
 	/* Step 3: check if childpid is valid/exist */
 	if (childpid < 1 || childpid > MAX_RUNNING_PROCS) {
+		*retval = -1;
 		return ESRCH;
 	}
 	if (p_table[childpid] == NULL) {
+		*retval = -1;
 		return ESRCH;
 	}
 
 	/* Step 4: check if childpid is actually our child*/
 	if (p_table[childpid]->ppid != curthread->t_pid) {
+		*retval = -1;
 		return ECHILD;
 	}
+
+	/* check the status pointer for kernel, NULL or invalid pointer */
+	if (status == NULL || status == (void *)0x40000000 || status == (void *)0x80000000) {
+		*retval = -1;
+		return EFAULT;
+	}	
 
 	/* Step 5: Acquire the lock and then check on the child, if not exited continue waiting on cv*/
 	

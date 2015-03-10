@@ -23,9 +23,25 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	char progNameFromUser[BUFFER_SIZE];
 	int result = 0;
 	size_t actual;
+	/* check progname pointer for NULL */
+	if (progname == NULL) {
+		return EFAULT;
+	}
+
 	if ((result = copyinstr(progname, progNameFromUser, BUFFER_SIZE, &actual)) != 0){
 		return result;
 	}
+
+	/* check if program name is empty */
+	if (strcmp(progNameFromUser, "") == 0) {
+		return EINVAL;
+	}
+
+	if (args == NULL || args == (void *)0x80000000 || args == (void *) 0x40000000) {
+		return EFAULT;
+	}
+
+	
 
 	/* Step 2: get the number of arguments from userspace */
 	int numArgs = 0;
@@ -33,8 +49,12 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	
 	
 	int i = 0;
+	char junk[255];
 	while (*(char **)(args+i) != NULL) {
-		copyin(args+i, &random, sizeof(int));
+		result = copyin(args+i, &random, sizeof(int));
+		if (result) return EFAULT;
+		result = copyinstr((userptr_t)random, junk, 255, &actual);
+		if (result) return EFAULT; 
 		numArgs++;
 		i += 4;
 	}
@@ -45,8 +65,12 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	int j = 4;
 	for (int i=0; i < numArgs; i++) {
 		commands[i] = kmalloc(100*sizeof(char));
-		copyin(args + (j*i), &pointersToGet[i], sizeof(int));
-		copyinstr((userptr_t)pointersToGet[i] , commands[i], 100, &actual); 
+		
+		result = copyin(args + (j*i), &pointersToGet[i], sizeof(int));
+		if (result) return EFAULT;
+	
+		result = copyinstr((userptr_t)pointersToGet[i] , commands[i], 100, &actual);
+		if (result) return EFAULT; 
 	}
 
 	void * startPoint;
