@@ -161,7 +161,6 @@ wait_siblings_child(void)
 	int pids[2], mypid, otherpid, fd, rv, x;
 
 	mypid = getpid();
-	printf("SIBLINGS CHILD - panic about to happen .. beware");	
 	fd = open(TESTFILE, O_RDONLY);
 	if (fd<0) {
 		warn("UH-OH: child process (pid %d) can't open %s",
@@ -181,6 +180,7 @@ wait_siblings_child(void)
 			return;
 		}
 		rv = read(fd, pids, sizeof(pids));
+		printf("File read from: %d \n", fd);
 		if (rv<0) {
 			warn("UH-OH: child process (pid %d) read error",
 			     mypid);
@@ -240,8 +240,8 @@ wait_siblings(void)
 		wait_siblings_child();
 		_exit(0);
 	}
-	printf("culprit");
 	rv = write(fd, pids, sizeof(pids));
+	printf("File written into : %d\n", fd);
 	if (rv < 0) {
 		warn("UH-OH: write error on %s", TESTFILE);
 		/* abandon child procs :( */
@@ -286,5 +286,6 @@ test_waitpid(void)
 
 	wait_self();
 	wait_parent();
+	printf("TEST ABOUT TO BEGIN");
 	wait_siblings();
 }

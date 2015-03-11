@@ -314,7 +314,7 @@ int sys_chdir(const_userptr_t pathName){
 	size_t actual;
 	int err;
 
-	if (pathName == NULL){
+	if (pathName == NULL || pathName == (void *) 0x40000000 || pathName == (void *) 0x80000000){
 		return EFAULT;
 	}
 
@@ -336,6 +336,9 @@ int sys_getcwd(userptr_t buf, int * retval){
 	user.uio_segflg = UIO_USERSPACE;
 	user.uio_space = curthread->t_addrspace;
 
+	if (buf == NULL || buf == (void *) 0x40000000 || buf == (void *) 0x80000000) {
+		return EFAULT;
+	}
 	
 	int err;
 	if ((err = vfs_getcwd(&user) != 0)){
