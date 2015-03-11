@@ -168,7 +168,7 @@ int sys_close(int fd) {
 
 
 /* write() call handler */
-int sys_write(int fd, void *buf, size_t nbytes, int * retval){
+int sys_write(int fd, userptr_t buf, size_t nbytes, int * retval){
 	
 	int err;	
 	/* Step 1: Check if the fd value is valid and that the file handle has been opened */
@@ -201,7 +201,13 @@ int sys_write(int fd, void *buf, size_t nbytes, int * retval){
 	struct uio user;
 	
 	/* get the file handle from the file table and initialize uio with the uio_kinit method using fhandle's offset value also*/
-	uio_kinit(&iov, &user, buf, nbytes, fdesc->offset, UIO_WRITE);	
+	iov.iov_kbase = buf;
+	iov.iov_len = nbytes;
+	user.uio_iov = &iov;
+	user.uio_iovcnt = 1;
+	user.uio_offset = fdesc->offset;
+	user.uio_resid = nbytes;
+	user.uio_rw = UIO_WRITE;
 	user.uio_segflg = UIO_USERSPACE;
 	user.uio_space = curthread->t_addrspace;
 	
@@ -213,7 +219,7 @@ int sys_write(int fd, void *buf, size_t nbytes, int * retval){
 	
 	/* Calculate the amount of bytes written and return success to user (indicated by 0)*/
 	*retval = nbytes - user.uio_resid;
-	fdesc->offset += *retval; // move the offset by the amount of bytes written	
+	fdesc->offset = user.uio_offset; // move the offset by the amount of bytes written	
 	
 	/* release the lock */
 	lock_release(fdesc->lock);
@@ -222,7 +228,7 @@ int sys_write(int fd, void *buf, size_t nbytes, int * retval){
 
 /* read() call handler */
 
-int sys_read(int fd, void *buf, size_t nbytes, int * retval){
+int sys_read(int fd, userptr_t buf, size_t nbytes, int * retval){
 	
 	int err;	
 	/* Step 1: Check if the fd value is valid and that the file handle has been opened */
@@ -256,7 +262,13 @@ int sys_read(int fd, void *buf, size_t nbytes, int * retval){
 	struct uio user;
 	
 	/* get the file handle from the file table and initialize uio with the uio_kinit method using fhandle's offset value also*/
-	uio_kinit(&iov, &user, buf, nbytes, fdesc->offset, UIO_READ);	
+	iov.iov_kbase = buf;
+	iov.iov_len = nbytes;
+	user.uio_iov = &iov;
+	user.uio_iovcnt = 1;
+	user.uio_offset = fdesc->offset;
+	user.uio_resid = nbytes;
+	user.uio_rw = UIO_READ;
 	user.uio_segflg = UIO_USERSPACE;
 	user.uio_space = curthread->t_addrspace;
 	
@@ -268,7 +280,7 @@ int sys_read(int fd, void *buf, size_t nbytes, int * retval){
 	
 	/* Calculate the amount of bytes written and return success to user (indicated by 0)*/
 	*retval = nbytes - user.uio_resid;
-	fdesc->offset += *retval; 	// advance offset by amount of bytes read	
+	fdesc->offset = user.uio_offset; 	// advance offset by amount of bytes read	
 	
 	/* releasing the lock*/
 	lock_release(fdesc->lock);

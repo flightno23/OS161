@@ -169,7 +169,7 @@ syscall(struct trapframe *tf)
 		break;
 
 	    case SYS_getpid:
-		sys_getpid(&retval);
+		err = sys_getpid(&retval);
 		break;
 
 	    case SYS_execv:

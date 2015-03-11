@@ -29,10 +29,10 @@ int sys_openConsole(char * fileName, int flags, int mode, int * retval, int perm
 int sys_close(int fd);
 
 /* sys_write function prototype */
-int sys_write(int fd, void * buf, size_t nbytes, int * retval);
+int sys_write(int fd, userptr_t buf, size_t nbytes, int * retval);
 
 /* sys_read function prototype */
-int sys_read(int fd, void * buf, size_t nbytes, int * retval);
+int sys_read(int fd, userptr_t buf, size_t nbytes, int * retval);
 
 /* sys_dup2 function prototype */
 int sys_dup2(int oldfd, int newfd, int * retval);

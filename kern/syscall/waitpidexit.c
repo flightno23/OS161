@@ -82,8 +82,8 @@ int sys_waitpid(pid_t childpid, userptr_t status, int options, int * retval) {
 }
 
 /* sys_getpid() funtion */
-void sys_getpid(int * retval) {
+int sys_getpid(int *retval) {
 
 	*retval = curthread->t_pid;
-
+	return 0;
 }
