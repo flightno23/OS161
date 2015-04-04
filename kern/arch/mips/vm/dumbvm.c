@@ -48,6 +48,13 @@
 /* under dumbvm, always have 48k of user stack */
 #define DUMBVM_STACKPAGES    12
 
+/* gsuriven, ktekchan*/
+#define PAGE_SIZE 4096
+
+
+/* Macro to round to pagesize - ktekchan*/
+#define ROUND_DOWN(addr, size) ((addr) - ((addr) % (size)))
+
 /*
  * Wrap rma_stealmem in a spinlock.
  */
@@ -56,7 +63,19 @@ static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 void
 vm_bootstrap(void)
 {
-	/* Do nothing. */
+	/*Code for ASST3 - gsuriven, ktekchan*/
+
+	paddr_t free_addr;
+	ram_getsize(&firstpaddr, &lastpaddr);
+	
+//	int total_page_num;
+	total_page_num = ROUND_DOWN(lastpaddr - firstpaddr, PAGE_SIZE)/PAGE_SIZE;
+	
+//	struct coremap_entry *coremap;
+	coremap = (struct coremap_entry *)PADDR_TO_KVADDR(firstpaddr);
+	free_addr = firstpaddr + total_page_num*sizeof(struct coremap_entry);
+
+//	Initialize coremap array
 }
 
 static
