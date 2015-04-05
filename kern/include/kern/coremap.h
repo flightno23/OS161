@@ -1,5 +1,10 @@
 /*Header file for coremap*/
 
+#define FIXED_PAGE 0
+#define FREE_PAGE 1
+#define CLEAN_PAGE 2
+#define DIRTY_PAGE 3
+
 struct coremap_entry{
 
 	struct page_struct *page;
@@ -9,6 +14,10 @@ struct coremap_entry{
 	bool is_last_page:1; /* (is this the last page ? ) */
 	bool is_allocated:1; /* (has this page been already allocated? ) */
 	bool is_pinned:1; /* is this page pinned (notion of pinned -  when a page is being used, for ex. during swapping its pinned*/
+	
+	/* 0 - fixed, 1 - free, 2 - clean, 3 - dirty */
+	int state:2; /* state of the page */
+
 }
 
 struct page_struct{

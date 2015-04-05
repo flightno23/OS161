@@ -60,6 +60,8 @@ vm_bootstrap(void)
 	// do absolutely nothing
 
 }
+
+/* function that gets npages number of pages and returns the physical address of the start point */
 static
 paddr_t
 getppages(unsigned long npages)

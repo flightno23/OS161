@@ -50,6 +50,12 @@
  */
 static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 
+
+/* GLOBAL flag that records whether vm has initialized */
+bool has_vm_boot = false;
+
+struct lock * coremapLock;
+
 void
 vm_bootstrap(void)
 {
@@ -73,20 +79,109 @@ vm_bootstrap(void)
 
 	while (i < noOfFixed) {
 		
-		coremap[i].
+		coremap[i].state = 0;	
+		coremap[i].is_kern_page = 1;
+		coremap[i].is_last_page = 0;
+		coremap[i].is_allocated = 1;
+		coremap[i].is_pinned = 0;
 		i++;
 	}
 	
 	/* next initialize the rest of the pages till last paddr. These will be marked FREE */
 	while (i < total_page_num) {
-
-		coremap[i].
+		
+		coremap[i].state = 1;
+		coremap[i].is_kern_page = 0;
+		coremap[i].is_last_page = 0;
+		coremap[i].is_allocated = 0;
+		coremap[i].is_pinned = 0;
 		i++;
 	}
 
 	/* Step 3 - mark the VM as bootstrapped so that alloc_kpages can function normally instead of calling ram_stealmem everytime */
-	
-	
+	has_vm_boot = true;	
+	coremapLock = lock_create("coremap lock"); // initializing the lock for the coremap array
 
 }
+
+
+vaddr_t alloc_kpages(int npages) {
+
+	paddr_t pa;
+
+	if (has_vm_boot == false) {
+		pa = getppages(npages);
+		if (pa == 0) {
+			return 0;
+		}
+	} else {	// VM has bootstrapped , use page_nalloc
+		
+		pa = page_nalloc(npages);
+		if (pa == 0) {
+			return 0;
+		}
+	}
+	return PADDR_TO_KVADDR(pa);
+
+}
+
+
+void free_kpages(vaddr_t addr) {
+	
+	/* find the coremap index of the address  */
+	int coremapIndex = ROUND_DOWN(addr, PAGE_SIZE) / PAGE_SIZE;
+	
+
+	/* acquire the lock and mark the page free */
+	lock_acquire(coremapLock);
+
+	coremap[coremapIndex].state = FREE_PAGE; 
+	
+	lock_release(coremapLock);
+
+}
+
+/*allocate one page */
+vaddr_t page_alloc() {
+	
+	/* find a free entry in the coremap */
+	for (int i=0; i < total_page_num; i++) {
+		if (coremap[i].state == FREE_PAGE) {
+			lock_acquire(coremapLock);
+			
+			if (coremap[i].state == FREE_PAGE) {
+				/* allocate the page (work in progress) */
+				coremap[i].state = DIRTY_PAGE;
+				/* add other things here , for ex the physical address that the page maps to , etc*/
+				lock_release(coremapLock);
+				break;				
+			}
+
+			lock_release(coremapLock)
+		}
+	}
+	/* if no free entry is found, then pick a victim to flush */
+	while (true) {
+	
+		int randomPage = rand() % (total_page_num);
+		
+		lock_acquire(coremapLock);
+			
+		if (coremap[i].state != FIXED_PAGE) {
+			/* allocate the page (work in progress) */
+			coremap[i].state = DIRTY_PAGE;
+			/* add other things here , for ex the physical address that the page maps to , etc*/
+			lock_release(coremapLock);
+			break;				
+		}
+		lock_release(coremapLock);
+	}		
+}
+
+
+vaddr_t page_nalloc() {
+
+
+}
+
 
