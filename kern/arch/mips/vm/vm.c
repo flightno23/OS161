@@ -334,6 +334,63 @@ int make_page_avail (){
 
 }
 
+vaddr_t page_alloc(struct addrspace *as, vaddr_t va){
+
+	int index;
+	lock_acquire (coremapLock);
+	index = make_page_avail();	// Find an index in coremap with FREE page or victim page that is not FIXED
+	bzero((void*)index*PAGE_SIZE, PAGE_SIZE); // Zero the said PAGE
+	coremap[index]->as = as;		// coremap entry now point to this PAGE
+	coremap[index]->va = va;
+	coremap[index]->state = DIRTY_PAGE;
+	coremap[index]->npages = 1;
+	lock_release(coremapLock);
+	
+}
+
+void page_free(vaddr_t va){
+
+	/* Define a spinlock to protect the TLB */
+
+	/* Find if the page is in the TLB and shoot it down */
+
+	int spl;
+	spl = splhigh();
+
+	
+
+	for (int i=0; i < NUM_TLB; i++){
+
+		tlb_read(&ehi, &elo, i);
+		if(ehi == (va & PAGE_FRAME)){
+			
+			tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+			break;
+		}
+	}
+
+	splx(spl);
+
+	/* Find the page in the PTE and delete the entry from PTE */
+	
+	deletePTE(va);
+	
+	/* Free the corresponding coremap entry */
+	lock_acquire(coremapLock);  //optimize lock
+	for (int i = 0; i < total_page_num; i++){
+		
+		if(coremap[i]->va == va){
+			
+			coremap[i]->as = NULL;
+			coremap[i]->va = 0;
+			coremap[i]->npages = 0;
+			coremap[i]->state = FREE_PAGE;
+			break;
+		}
+	}
+	lock_release(coremapLock);
+
+}
 /* EXPERIMENTAL CODE - forget about this for now 
 vaddr_t page_alloc() {
 	

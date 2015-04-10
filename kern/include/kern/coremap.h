@@ -9,9 +9,9 @@
 struct coremap_entry{
 
 	int npages; /* holds the number of continuous allocations */
-
 	int state; /* state of page - fixed, free, clean, dirty */
-	
+	vaddr_t va;
+	struct addrspace * as;
 	/* add more info here later */
 };
 
