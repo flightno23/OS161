@@ -65,8 +65,15 @@ void deletePTE(vaddr_t va) {
 }
 
 /* method to add a page table entry into the page table (this inserts into head of linked list) */
-void addPTE(struct page_table_entry * pteToAdd) {
+struct page_table_entry *  addPTE(struct addrspace * as, vaddr_t va,paddr_t pa) {
 	
+	struct page_table_entry * pteToAdd;
+	pteToAdd = kmalloc(sizeof(struct page_table_entry));
+
+	pteToAdd->va = va;
+	pteToAdd->pa = pa;
+	pteToAdd->state = DIRTY_PAGE;
+	pteToAdd->permissions = as_get_permissions(as,va);
 	struct page_table_entry * firstNode = curthread->t_addrspace->firstNode;
 
 	// if firstNode is not initialised, set this to the first node 
@@ -75,8 +82,10 @@ void addPTE(struct page_table_entry * pteToAdd) {
 	}	
 
 	// Else, insert into head of LL
-	pteToAdd->next = firstNode;
-	firstNode = pteToAdd;
+	else{
+		pteToAdd->next = firstNode;
+		firstNode = pteToAdd;
+	}
 
 	return;		
 }

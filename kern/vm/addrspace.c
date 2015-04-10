@@ -213,3 +213,35 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 	return 0;
 }
 
+int as_get_permissions(struct addrspace * as, vaddr_t faultaddress){
+	
+	// collecting information about the address space
+        vbase1 = as->as_vbase1;
+        vtop1 = vbase1 + as->as_npages1 * PAGE_SIZE;
+        vbase2 = as->as_vbase2;
+        vtop2 = vbase2 + as->as_npages2 * PAGE_SIZE;
+        stackbase = USERSTACK - DUMBVM_STACKPAGES * PAGE_SIZE;
+        stacktop = USERSTACK;
+        heapstart = as->as_heapStart;
+        heapend = as->as_heapEnd;
+
+	int permissions;
+
+	// The permissions will be set in the last 3 bits
+	// 7 is 111 (binary)
+	if (faultaddress >= vbase1 && faultaddress < vtop1) {
+		permissions = (7 & vbase1); 
+        }
+        else if (faultaddress >= vbase2 && faultaddress < vtop2) {
+		permissions = (7 & vbase2);
+        }
+        else if (faultaddress >= stackbase && faultaddress < stacktop) {
+		permissions = (7 & stackbase);
+        }
+        else if (faultaddress >= heapStart && faultaddress < heapEnd) {
+		permissions = (7 & heapStart);
+        }
+	
+	return permissions;                
+
+}

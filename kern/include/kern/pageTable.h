@@ -8,12 +8,14 @@ struct page_table_entry {
 
 	// states, permissions information , etc .. add later as needed 
 
+	int state;
+	int permissions:3;
 	struct page_table_entry * next;
 }
 
 
 /* method to add a node to the page table */
-void addPTE(struct page_table_entry * pteToAdd);
+struct page_table_entry * addPTE(struct page_table_entry * pteToAdd);
 
 /* method to walk through the page table and find and entry that matches the virtual address */
 struct page_table_entry * pgdir_walk(vaddr_t va);

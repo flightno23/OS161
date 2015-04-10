@@ -1,32 +1,3 @@
-/*
- * Copyright (c) 2000, 2001, 2002, 2003, 2004, 2005, 2008, 2009
- *	The President and Fellows of Harvard College.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE UNIVERSITY OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-
 #include <types.h>
 #include <kern/errno.h>
 #include <lib.h>
@@ -293,10 +264,21 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 	if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE) {
 		struct page_table_entry * tempPTE;
 		tempPTE = pgdir_walk();	// walk through the page table and find the PTE
+
 		if (tempPTE == NULL) {	// no entry found, create a new entry and store in the page table
-			page_alloc(/*call this function */);
-		}
+			paddr_t tempPa;
+			tempPa = page_alloc(as, faultaddress);
 			
+			tempPTE = addPTE(as,va,tempPa);
+		}
+
+		// Call tlb_random
+		int permissions = as_get_permissions(as,va);
+		uint32_t addrHi, addrLo;
+		addrHi = va;
+		addrLo = ((permissions & 2) << 9) | (tempPTE->pa);
+		tlb_random (addrHi, addrLo);
+					
 	} else if (faulttype == VM_FAULT_READONLY) {  // Dealing with VM_FAULT_READONLY, when write was requested on address having read-only permission
 		// Do something else
 	}
@@ -334,7 +316,7 @@ int make_page_avail (){
 
 }
 
-vaddr_t page_alloc(struct addrspace *as, vaddr_t va){
+paddr_t page_alloc(struct addrspace *as, vaddr_t va){
 
 	int index;
 	lock_acquire (coremapLock);
@@ -345,7 +327,8 @@ vaddr_t page_alloc(struct addrspace *as, vaddr_t va){
 	coremap[index]->state = DIRTY_PAGE;
 	coremap[index]->npages = 1;
 	lock_release(coremapLock);
-	
+
+	return index*PAGE_SIZE;	
 }
 
 void page_free(vaddr_t va){
