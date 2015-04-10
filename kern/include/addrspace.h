@@ -59,6 +59,20 @@ struct addrspace {
         paddr_t as_stackpbase;
 #else
         /* Put stuff here for your VM system */
+	struct page_table_entry * firstNode; // first node of the linked list page table structure 
+	
+	/* Mapping of the address space (code, data, heap and stack ) ; only mapping two regions (as dumb as possible) */
+	vaddr_t as_vbase1;
+	size_t as_npages1;
+	vaddr_t as_vbase2;
+	size_t as_npages2;
+	vaddr_t as_stackvbase;	// base of the stack . Stack goes from as_stackvbase -> stacktop
+	size_t as_stacknPages;	// number of pages held by the stack  
+	vaddr_t as_heapStart;	// start point of the heap
+	vaddr_t as_heapEnd;	// end point of the heap
+	size_t as_heapnPages;	// number of pages that the heap is currently holding
+	
+
 #endif
 };
 

@@ -45,6 +45,9 @@
 /* Macros to round up or round down */
 #define ROUND_DOWN(addr, size) ((addr) - ((addr) % (size)))
 #define ROUND_UP(addr, size) ((addr) - ((addr) % (size)) + (size))
+#define MAX_TIME 9223372036854775807
+
+
 
 /*
  * Wrap rma_stealmem in a spinlock.
@@ -229,16 +232,107 @@ vm_tlbshootdown(const struct tlbshootdown *ts)
 	panic("smartvm tried to do tlb shootdown?!\n");
 }
 
+// function that handles tlb faults
 int
 vm_fault(int faulttype, vaddr_t faultaddress) {
 	
-	(void) faulttype;
-	(void) faultaddress;
-	return EFAULT;	// STUB - doesn't do a thing
+	struct addrspace * as;
+	vaddr_t vbase1, vtop1, vbase2, vtop2, stackbase, stacktop, heapstart, heapend;
+	
+	// cleaning up the address (only high 20 bits required)
+	faultaddress &= PAGE_FRAME;
+	
+	// sanity check to see if the address space is uninitialized
+	as = curthread->t_addrspace;
+	if (as == NULL) {
+		return EFAULT;
+	}
 
+	/* Assert that the address space has been set up properly. */
+	KASSERT(as->as_vbase1 != 0);
+	KASSERT(as->as_pbase1 != 0);
+	KASSERT(as->as_npages1 != 0);
+	KASSERT(as->as_vbase2 != 0);
+	KASSERT(as->as_pbase2 != 0);
+	KASSERT(as->as_npages2 != 0);
+	KASSERT(as->as_stackpbase != 0);
+	KASSERT((as->as_vbase1 & PAGE_FRAME) == as->as_vbase1);
+	KASSERT((as->as_pbase1 & PAGE_FRAME) == as->as_pbase1);
+	KASSERT((as->as_vbase2 & PAGE_FRAME) == as->as_vbase2);
+	KASSERT((as->as_pbase2 & PAGE_FRAME) == as->as_pbase2);
+	KASSERT((as->as_stackpbase & PAGE_FRAME) == as->as_stackpbase);
+	
+	// collecting information about the address space
+	vbase1 = as->as_vbase1;
+	vtop1 = vbase1 + as->as_npages1 * PAGE_SIZE;
+	vbase2 = as->as_vbase2;
+	vtop2 = vbase2 + as->as_npages2 * PAGE_SIZE;
+	stackbase = USERSTACK - DUMBVM_STACKPAGES * PAGE_SIZE;
+	stacktop = USERSTACK;
+	heapstart = as->as_heapStart;
+	heapend = as->as_heapEnd;
+	 
+	// Now, check if the faultaddress is a valid one
+	if (faultaddress >= vbase1 && faultaddress < vtop1) {
+		// Do nothing , in valid region
+	}
+	else if (faultaddress >= vbase2 && faultaddress < vtop2) {
+		// Do nothing , in valid region
+	}
+	else if (faultaddress >= stackbase && faultaddress < stacktop) {
+		// Do nothing , in valid region
+	}
+	else if (faultaddress >= heapStart && faultaddress < heapEnd) {
+		// Do nothing , in valid region
+	}
+	else {
+		return EFAULT;	// oops, you have reached an invalid region of the address space
+	}
+	
+	// Next, deal with VM_FAULT_READ and VM_FAULT_WRITE
+	if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE) {
+		struct page_table_entry * tempPTE;
+		tempPTE = pgdir_walk();	// walk through the page table and find the PTE
+		if (tempPTE == NULL) {	// no entry found, create a new entry and store in the page table
+			page_alloc(/*call this function */);
+		}
+			
+	} else if (faulttype == VM_FAULT_READONLY) {  // Dealing with VM_FAULT_READONLY, when write was requested on address having read-only permission
+		// Do something else
+	}
+	
+
+		
 }
 
+int make_page_avail (){
 
+        time_t min_time;
+        min_time = MAX_TIME;
+        int index_to_ret;
+
+
+        /*Find appropriate index of coremap to allocate a free page or the oldest page*/
+        for (int i=0; i < total_page_num; i++){
+
+                /* Checks to find a free page */
+                if (coremap[i].state == FREE_PAGE){
+                        return i;
+                }
+
+                /* Checks to find the oldest page which is not fixed */
+                else if (coremap[i].state != FIXED_PAGE){
+                        if (coremap[i].timeStamp < min_time){
+                                min_time = coremap[i].timeStamp;
+                                index_to_ret = i;
+                        }
+                }
+
+        }
+
+        return index_to_ret;
+
+}
 
 /* EXPERIMENTAL CODE - forget about this for now 
 vaddr_t page_alloc() {

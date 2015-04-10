@@ -210,13 +210,13 @@ as_create(void)
 		return NULL;
 	}
 
-	as->as_vbase1 = 0;
+	as->as_vbase1 = 0;	// need this
 	as->as_pbase1 = 0;
-	as->as_npages1 = 0;
-	as->as_vbase2 = 0;
-	as->as_pbase2 = 0;
-	as->as_npages2 = 0;
-	as->as_stackpbase = 0;
+	as->as_npages1 = 0;	// need this
+	as->as_vbase2 = 0;	// need this
+	as->as_pbase2 = 0;	
+	as->as_npages2 = 0;	// need this
+	as->as_stackpbase = 0;	// need this
 
 	return as;
 }

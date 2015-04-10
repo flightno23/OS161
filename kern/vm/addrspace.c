@@ -39,6 +39,7 @@
  * used. The cheesy hack versions in dumbvm.c are used instead.
  */
 
+/* Function that initialises the new address space for you and returns it back  */
 struct addrspace *
 as_create(void)
 {
@@ -51,11 +52,22 @@ as_create(void)
 
 	/*
 	 * Initialize as needed.
-	 */
+	 */	
+	as->as_vbase1 = 0;
+	as->as_npages1 = 0;
+	as->as_vbase2 = 0;
+	as->as_npages2 = 0;
+	as->as_stackvbase = 0;	// base of the stack . Stack goes from as_stackvbase -> stacktop
+	as->as_stacknPages = 0;	// number of pages held by the stack  
+	as->as_heapStart = 0;	// start point of the heap
+	as->as_heapEnd = 0;	// end point of the heap
+	as->as_heapnPages = 0;	// number of pages that the heap is currently holding
 
 	return as;
 }
 
+
+/* Copies the address space of the old process and creates an identical address space which is returned to user */
 int
 as_copy(struct addrspace *old, struct addrspace **ret)
 {
@@ -76,6 +88,8 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	return 0;
 }
 
+
+/* Destroys the address space structure as well as the page table data structure associated with it*/
 void
 as_destroy(struct addrspace *as)
 {
@@ -86,14 +100,26 @@ as_destroy(struct addrspace *as)
 	kfree(as);
 }
 
+
+/* this function will activate the address space by shooting down the TLB entries */
 void
 as_activate(struct addrspace *as)
 {
 	/*
 	 * Write this.
-	 */
+	 */	
+	int i, spl;
 
-	(void)as;  // suppress warning until code gets written
+	(void)as;
+
+	/* Disable interrupts on this CPU while frobbing the TLB. */
+	spl = splhigh();
+
+	for (i=0; i<NUM_TLB; i++) {
+		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+	}
+
+	splx(spl);
 }
 
 /*
@@ -114,13 +140,40 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 	 * Write this.
 	 */
 
-	(void)as;
-	(void)vaddr;
-	(void)sz;
-	(void)readable;
-	(void)writeable;
-	(void)executable;
+
+	size_t npages; 
+
+	/* Align the region. First, the base... */
+	sz += vaddr & ~(vaddr_t)PAGE_FRAME;
+	vaddr &= PAGE_FRAME;
+
+	/* ...and now the length. */
+	sz = (sz + PAGE_SIZE - 1) & PAGE_FRAME;
+
+	npages = sz / PAGE_SIZE;
+
+	/* Permissions are marked as follows - (read bit, write bit, executable bit) with executable bit being the LSB*/
+	vaddr = (vaddr | (readable|writeable|executable));	
+
+	if (as->as_vbase1 == 0) {
+		as->as_vbase1 = vaddr;
+		as->as_npages1 = npages;
+		
+		return 0;
+	}
+
+	if (as->as_vbase2 == 0) {
+		as->as_vbase2 = vaddr;
+		as->as_npages2 = npages;
+		return 0;
+	}
+
+	/*
+	 * Support for more than two regions is not available.
+	 */
+	kprintf("dumbvm: Warning: too many regions\n");
 	return EUNIMP;
+
 }
 
 int

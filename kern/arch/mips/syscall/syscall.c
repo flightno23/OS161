@@ -110,34 +110,35 @@ syscall(struct trapframe *tf)
 		break;
 
 	    /* Add stuff here */
+	// OPEN System Call
 	    case SYS_open:
 		err = sys_open((const_userptr_t)tf->tf_a0, tf->tf_a1, &retval); // arguments (filename, flags, return value)
 		break;
-		
+	// CLOSE System Call
 	    case SYS_close:
 		err = sys_close(tf->tf_a0); // only one argument, takes the file handle number
 		break;
-
+	// WRITE System Call
 	    case SYS_write:
 		err = sys_write(tf->tf_a0, (userptr_t)tf->tf_a1, tf->tf_a2, &retval);	// arguments (fd, buf, nbytes, retval)
 		break;
-	    
+	// READ System Call
 	    case SYS_read:
 		err = sys_read(tf->tf_a0, (userptr_t)tf->tf_a1, tf->tf_a2, &retval);	// arguments (fd, buf, nbytes, retval)
 		break;
-	
+	// DUP2 System Call
 	    case SYS_dup2:
 		err = sys_dup2(tf->tf_a0, tf->tf_a1, &retval);
 		break;
-
+	// CHDIR System Call
 	    case SYS_chdir:
 		err = sys_chdir((const_userptr_t)tf->tf_a0);
 		break;
-
+	// GETCWD System Call
 	    case SYS___getcwd:
 		err = sys_getcwd((userptr_t)tf->tf_a0, &retval);
 		break;
-
+	// LSEEK System Call
 	    case SYS_lseek: {
 		off_t retVal64 = 0;
 		off_t offset = ((off_t)tf->tf_a2 << 32) | tf->tf_a3;
@@ -155,27 +156,31 @@ syscall(struct trapframe *tf)
 		}
 		break;
 		}
-
+	// FORK SYSTEM CALL
 	    case SYS_fork:
 		err = sys_fork(tf, &retval);
 		break;
-
+	// EXIT SYSTEM CALL
 	    case SYS__exit:
 		sys_exit(tf->tf_a0);
 		break;
-
+	// WAITPID System Call
 	    case SYS_waitpid:
 		err = sys_waitpid(tf->tf_a0,(userptr_t)tf->tf_a1, tf->tf_a2, &retval); 
 		break;
-
+	// GETPID System Call
 	    case SYS_getpid:
 		err = sys_getpid(&retval);
 		break;
-
+	// Execv System Call
 	    case SYS_execv:
 		err = sys_execv((userptr_t)tf->tf_a0, (userptr_t)tf->tf_a1);
 		break;
-
+	// SBRK System Call
+	    case SYS_sbrk:
+		err = sys_sbrk(tf->tf_a0, &retval);
+		break;
+	// DEFAULT Case (unknown syscall)
 	    default:
 		kprintf("Unknown syscall %d\n", callno);
 		err = ENOSYS;
