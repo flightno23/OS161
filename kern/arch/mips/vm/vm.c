@@ -209,6 +209,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 	
 	struct addrspace * as;
 	vaddr_t vbase1, vtop1, vbase2, vtop2, stackbase, stacktop, heapstart, heapend;
+	int permissions;
 	
 	// cleaning up the address (only high 20 bits required)
 	faultaddress &= PAGE_FRAME;
@@ -260,6 +261,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 		return EFAULT;	// oops, you have reached an invalid region of the address space
 	}
 	
+
 	// Next, deal with VM_FAULT_READ and VM_FAULT_WRITE
 	if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE) {
 		struct page_table_entry * tempPTE;
@@ -272,21 +274,37 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 			tempPTE = addPTE(as,va,tempPa);
 		}
 
-		// Call tlb_random
-		int permissions = as_get_permissions(as,va);
+		// Call tlb_random after the packing the bits
+		permissions = as_get_permissions(as,faultaddress);
 		uint32_t addrHi, addrLo;
-		addrHi = va;
+		addrHi = faultaddress;
 		addrLo = ((permissions & 2) << 9) | (tempPTE->pa);
-		tlb_random (addrHi, addrLo);
+		tlb_random(addrHi, addrLo);
 					
 	} else if (faulttype == VM_FAULT_READONLY) {  // Dealing with VM_FAULT_READONLY, when write was requested on address having read-only permission
-		// Do something else
+		/* checking if the page is actually writable */
+		permissions = as_get_permissions(as, faultaddress);
+		if (((permissions & 2) >> 1) == 1) {
+			paddr paRead;
+			vaddr vaRead;
+			
+			int result = tlb_probe(faultaddress, 0);
+			tlb_read(&vaRead, &paRead, result);
+			paRead |= (1 << 10); // setting the dirty bit to 1
+			tlb_write(vaRead, paRead, result);
+ 
+		} else {
+			/* panic or kill the process */
+			panic("user tried writing into a region without write permissions. WTF!\n");
+		}	
 	}
 	
-
+	return 0; // success
 		
 }
 
+
+/* Method to look for a free physical page or finds a victim according to timestamp to throw out */
 int make_page_avail (){
 
         time_t min_time;
@@ -316,21 +334,26 @@ int make_page_avail (){
 
 }
 
+/* Method to allocate one physical page to the user */
 paddr_t page_alloc(struct addrspace *as, vaddr_t va){
 
 	int index;
+	
 	lock_acquire (coremapLock);
+	
 	index = make_page_avail();	// Find an index in coremap with FREE page or victim page that is not FIXED
 	bzero((void*)index*PAGE_SIZE, PAGE_SIZE); // Zero the said PAGE
 	coremap[index]->as = as;		// coremap entry now point to this PAGE
 	coremap[index]->va = va;
 	coremap[index]->state = DIRTY_PAGE;
 	coremap[index]->npages = 1;
+	
 	lock_release(coremapLock);
 
 	return index*PAGE_SIZE;	
 }
 
+/* Method to free a page with a start virtual address va */
 void page_free(vaddr_t va){
 
 	/* Define a spinlock to protect the TLB */
@@ -354,10 +377,6 @@ void page_free(vaddr_t va){
 
 	splx(spl);
 
-	/* Find the page in the PTE and delete the entry from PTE */
-	
-	deletePTE(va);
-	
 	/* Free the corresponding coremap entry */
 	lock_acquire(coremapLock);  //optimize lock
 	for (int i = 0; i < total_page_num; i++){
@@ -374,43 +393,4 @@ void page_free(vaddr_t va){
 	lock_release(coremapLock);
 
 }
-/* EXPERIMENTAL CODE - forget about this for now 
-vaddr_t page_alloc() {
 	
-	// find a free entry in the coremap 
-	for (int i=0; i < total_page_num; i++) {
-		if (coremap[i].state == FREE_PAGE) {
-			lock_acquire(coremapLock);
-			
-			if (coremap[i].state == FREE_PAGE) {
-				// allocate the page (work in progress) 
-				coremap[i].state = DIRTY_PAGE;
-				// add other things here , for ex the physical address that the page maps to , etc
-				lock_release(coremapLock);
-				break;				
-			}
-
-			lock_release(coremapLock)
-		}
-	}
-	// if no free entry is found, then pick a victim to flush 
-	while (true) {
-	
-		int randomPage = rand() % (total_page_num);
-		
-		lock_acquire(coremapLock);
-			
-		if (coremap[i].state != FIXED_PAGE) {
-			// allocate the page (work in progress) 
-			coremap[i].state = DIRTY_PAGE;
-			// add other things here , for ex the physical address that the page maps to , etc
-			lock_release(coremapLock);
-			break;				
-		}
-		lock_release(coremapLock);
-	}		
-}
-
-*/
-
-

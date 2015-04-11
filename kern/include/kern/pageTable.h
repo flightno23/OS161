@@ -26,3 +26,6 @@ void deletePTE(vaddr_t va);
 /* method to delete the entire page table structure - freeing memory carefully */
 void deletePageTable();
 
+/* method to copy the linked list page table structure for as_copy */
+struct page_table_entry * copyPageTable(struct page_table_entry * firstNode);
+

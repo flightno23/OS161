@@ -82,8 +82,21 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	 * Write this.
 	 */
 
-	(void)old;
+	// copy the page table of the old address space
+	newas->firstNode = copyPageTable(old->firstNode);
 	
+	// copy the region contents of the address space
+		
+	newas->as_vbase1 = old->as_vbase1;
+	newas->as_npages1 = old->as_npages1;
+	newas->as_vbase2 = old->as_vbase2;
+	newas->as_npages2 = old->as_npages2;
+	newas->as_stackvbase = old->as_stackvbase;	// base of the stack . Stack goes from as_stackvbase -> stacktop
+	newas->as_stacknPages = old->as_stacknPages;	// number of pages held by the stack  
+	newas->as_heapStart = old->as_heapStart;	// start point of the heap
+	newas->as_heapEnd = old->as_heapEnd;	// end point of the heap
+	newas->as_heapnPages = old->as_heapnPages;	// number of pages that the heap is currently holding
+
 	*ret = newas;
 	return 0;
 }
@@ -93,10 +106,9 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 void
 as_destroy(struct addrspace *as)
 {
-	/*
-	 * Clean up as needed.
-	 */
 	
+	deletePageTable();	
+		
 	kfree(as);
 }
 
@@ -158,13 +170,16 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 	if (as->as_vbase1 == 0) {
 		as->as_vbase1 = vaddr;
 		as->as_npages1 = npages;
-		
+		as->as_heapStart = as_vbase1 + (npages1 * PAGE_SIZE) + 1;
+		as->as_heapEnd = as->as_heapStart; 	
 		return 0;
 	}
 
 	if (as->as_vbase2 == 0) {
 		as->as_vbase2 = vaddr;
 		as->as_npages2 = npages;
+		as->as_heapStart = as_vbase2 + (npages2 * PAGE_SIZE) + 1;
+		as->as_heapEnd = as->as_heapStart; 	
 		return 0;
 	}
 
@@ -176,28 +191,57 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 
 }
 
+/* Method that sets the (code, readonly and data regions) as read-write permissions to load binary */
 int
 as_prepare_load(struct addrspace *as)
 {
-	/*
-	 * Write this.
-	 */
+	
+	/* use the bits (3,4,5) to record the old permissions - make this change to vbase1 and vbase2 */
+	int permissions, newPermissions;
+	permissions = (as->as_vbase1 & 7) << 3;
+	/* new permissions recorded in bits (0,1,2) */
+	newPermissions = (permissions | 6 );
+	
+	/* clearing the last 12 bits and setting new permissions */
+	as->as_vbase1 &= PAGE_FRAME;
+	as->as_vbase1 |= newPermissions;
 
-	(void)as;
+	/* repeating the same steps for vbase2 */
+	
+	permissions = (as->as_vbase2 & 7) << 3;
+	/* new permissions recorded in bits (0,1,2) */
+	newPermissions = (permissions | 6 );
+	
+	/* clearing the last 12 bits and setting new permissions */
+	as->as_vbase2 &= PAGE_FRAME;
+	as->as_vbase2 |= newPermissions;
+	
+
 	return 0;
 }
 
+/* Method that resets back the regions to the original permissions */
 int
 as_complete_load(struct addrspace *as)
 {
-	/*
-	 * Write this.
-	 */
+	int newPermissions;
+	/* get the permissions from the as for the vbase1 region and revert to older permissions */
+	newPermissions = (as->as_vbase1 & 0x3F) >> 3; // 0x3F stands for (111 111) in binary
+	as->as_vbase1 &= PAGE_FRAME;
+	as->as_vbase1 |= newPermissions;
 
-	(void)as;
+	
+	/* get the permissions from the as for the vbase2 region and revert to older permissions */
+	newPermissions = (as->as_vbase2 & 0x3F) >> 3;
+	as->as_vbase2 &= PAGE_FRAME;
+	as->as_vbase2 |= newPermissions;
+	
+	
+	
 	return 0;
 }
 
+/* Function that defines the start of the STACK */
 int
 as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 {
@@ -205,15 +249,17 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 	 * Write this.
 	 */
 
-	(void)as;
-
 	/* Initial user-level stack pointer */
-	*stackptr = USERSTACK;
+	*stackptr = USERSTACKTOP;
 	
 	return 0;
 }
 
+/* Function that gets the regions permissions that a fault address belongs to */
 int as_get_permissions(struct addrspace * as, vaddr_t faultaddress){
+	
+	// Variable declarations	
+	vaddr_t vbase1, vtop1, vbase2, vtop2, stackbase, stacktop, heapStart, heapEnd;
 	
 	// collecting information about the address space
         vbase1 = as->as_vbase1;
@@ -222,8 +268,8 @@ int as_get_permissions(struct addrspace * as, vaddr_t faultaddress){
         vtop2 = vbase2 + as->as_npages2 * PAGE_SIZE;
         stackbase = USERSTACK - DUMBVM_STACKPAGES * PAGE_SIZE;
         stacktop = USERSTACK;
-        heapstart = as->as_heapStart;
-        heapend = as->as_heapEnd;
+        heapStart = as->as_heapStart;
+        heapEnd = as->as_heapEnd;
 
 	int permissions;
 

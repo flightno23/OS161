@@ -29,6 +29,7 @@ void deletePageTable() {
 	// loop from the first Node to the end
 	while (firstPTE != null) {
 		temp = firstPTE;
+		page_free(temp->va);
 		firstPTE = firstPTE->next;
 		kfree(temp);
 	}
@@ -89,4 +90,31 @@ struct page_table_entry *  addPTE(struct addrspace * as, vaddr_t va,paddr_t pa) 
 
 	return;		
 }
+
+/* method to copy a page table given the first node of the page table to be copied */
+struct page_table_entry * copyPageTable(struct page_table_entry * firstNode) {
+
+	// if there is nothing to copy, return NULL
+	if (firstNode == NULL) {
+		return NULL;
+	}
+
+	// else start copying the page table
+	struct page_table_entry * temp = firstNode;
+	struct page_table_entry * newFirstNode = NULL;
+	
+	// copy to head using a while loop as order doesn't matter
+	while (temp != NULL) {	
+		struct page_table_entry * newNode = kmalloc(sizeof(struct page_table_entry));
+		newNode->va = temp->va;
+		newNode->permissions = temp->permissions;	
+		newNode->next = newFirstNode;
+		newFirstNode = newNode;
+	}
+
+	return newFirstNode;
+
+	
+}
+
 
