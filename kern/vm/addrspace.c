@@ -60,6 +60,7 @@ as_create(void)
 	/*
 	 * Initialize as needed.
 	 */	
+	as->firstNode = NULL; // page table empty initially
 	as->as_vbase1 = 0;
 	as->as_npages1 = 0;
 	as->as_vbase2 = 0;
@@ -69,6 +70,7 @@ as_create(void)
 	as->as_heapStart = 0;	// start point of the heap
 	as->as_heapEnd = 0;	// end point of the heap
 	as->as_heapnPages = 0;	// number of pages that the heap is currently holding
+	
 
 	return as;
 }
@@ -258,7 +260,7 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 
 	/* Initial user-level stack pointer */
 	*stackptr = USERSTACK;
-	(void) as;
+	as->as_stackvbase = USERSTACK;
 	
 	return 0;
 }
