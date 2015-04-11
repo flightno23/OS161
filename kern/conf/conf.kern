@@ -332,6 +332,7 @@ file	  thread/processManage.c
 file      vm/kmalloc.c
 
 optofffile dumbvm   vm/addrspace.c
+optofffile dumbvm   vm/pageTable.c
 
 #
 # Network
@@ -371,6 +372,7 @@ file	  syscall/fileOperations.c
 file	  syscall/fork.c
 file	  syscall/waitpidexit.c
 file	  syscall/execv.c
+file      syscall/sbrk.c
 
 #
 # Startup and initialization

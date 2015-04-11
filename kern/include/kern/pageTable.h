@@ -1,4 +1,5 @@
 /* Custom page table interface - we are following a linked list structure for the page tables */
+#include <addrspace.h>
 
 struct page_table_entry {
 
@@ -24,7 +25,7 @@ struct page_table_entry * pgdir_walk(vaddr_t va);
 void deletePTE(vaddr_t va);
 
 /* method to delete the entire page table structure - freeing memory carefully */
-void deletePageTable();
+void deletePageTable(void);
 
 /* method to copy the linked list page table structure for as_copy */
 struct page_table_entry * copyPageTable(struct page_table_entry * firstNode);

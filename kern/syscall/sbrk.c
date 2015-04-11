@@ -1,3 +1,8 @@
+#include <types.h>  /* file for different types of OS161 */
+#include <kern/sbrk.h> /* header file of this file */
+#include <current.h>  /* for curthread */
+#include <addrspace.h> /* heap start, end , etc */
+#include <kern/errno.h> /* for different error constants */
 
 /* sys_sbrk function */
 int sys_sbrk(int amount, int * retval) {
@@ -7,12 +12,12 @@ int sys_sbrk(int amount, int * retval) {
 
 	heapEnd = curthread->t_addrspace->as_heapEnd;
 	heapStart = curthread->t_addrspace->as_heapStart;
-	stackBase = curthread->t_addrspace->as_stackvBase;
+	stackBase = curthread->t_addrspace->as_stackvbase;
 	
 	// parameter checking to see if heap end + amount < heap start
 	if ((heapEnd + amount) < heapStart) {
 		return EINVAL;	
-	} else if (heapEnd + amount > stackvBase) { // parameter checking to see if heap has not overlapped with the stack
+	} else if (heapEnd + amount > stackBase) { // parameter checking to see if heap has not overlapped with the stack
 		return EINVAL;
 	}
 

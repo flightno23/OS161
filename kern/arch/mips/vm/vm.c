@@ -364,7 +364,7 @@ void page_free(vaddr_t va){
 	int spl;
 	spl = splhigh();
 
-	
+	uint32_t ehi, elo;
 
 	for (int i=0; i < NUM_TLB; i++){
 		
@@ -382,13 +382,14 @@ void page_free(vaddr_t va){
 	lock_acquire(coremapLock);  //optimize lock
 	for (int i = 0; i < total_page_num; i++){
 		
-		if(coremap[i]->va == va){
+		if(coremap[i].va == va){
 			
-			coremap[i]->as = NULL;
-			coremap[i]->va = 0;
-			coremap[i]->npages = 0;
-			coremap[i]->state = FREE_PAGE;
+			coremap[i].as = NULL;
+			coremap[i].va = 0;
+			coremap[i].npages = 0;
+			coremap[i].state = FREE_PAGE;
 			break;
+
 		}
 	}
 	lock_release(coremapLock);

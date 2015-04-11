@@ -1,3 +1,8 @@
+#include <types.h>
+#include <kern/pageTable.h> /* to get all the function prototypes in this file */
+#include <current.h> /* for curthread */
+#include <lib.h> /* for kfree and other standard library functions */
+#include <kern/coremap.h> /* for constants such as DIRTY_PAGE, CLEAN_PAGE and functions defined in it */
 
 /* method to walk through the page table and find the matching entry if it exists, else return NULL */
 struct page_table_entry * pgdir_walk(vaddr_t va) {
@@ -27,7 +32,7 @@ void deletePageTable() {
 	struct page_table_entry * temp;
 	
 	// loop from the first Node to the end
-	while (firstPTE != null) {
+	while (firstPTE != NULL) {
 		temp = firstPTE;
 		page_free(temp->va);
 		firstPTE = firstPTE->next;
@@ -88,7 +93,7 @@ struct page_table_entry *  addPTE(struct addrspace * as, vaddr_t va,paddr_t pa) 
 		firstNode = pteToAdd;
 	}
 
-	return;		
+	return pteToAdd;		
 }
 
 /* method to copy a page table given the first node of the page table to be copied */
