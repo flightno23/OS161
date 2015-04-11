@@ -32,6 +32,13 @@
 #include <lib.h>
 #include <addrspace.h>
 #include <vm.h>
+#include <kern/pageTable.h> /* For access to the page table structure and interface */
+#include <spl.h> /* For access to the the interrupts level setter functions splhigh and spl */
+#include <mips/tlb.h> /* for access to the TLB interface */
+
+/* Number of stack pages in system - right now its hard coded */
+#define SMARTVM_STACKPAGES 12
+
 
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
@@ -170,7 +177,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 	if (as->as_vbase1 == 0) {
 		as->as_vbase1 = vaddr;
 		as->as_npages1 = npages;
-		as->as_heapStart = as_vbase1 + (npages1 * PAGE_SIZE) + 1;
+		as->as_heapStart = as->as_vbase1 + (as->as_npages1 * PAGE_SIZE) + 1;
 		as->as_heapEnd = as->as_heapStart; 	
 		return 0;
 	}
@@ -178,7 +185,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 	if (as->as_vbase2 == 0) {
 		as->as_vbase2 = vaddr;
 		as->as_npages2 = npages;
-		as->as_heapStart = as_vbase2 + (npages2 * PAGE_SIZE) + 1;
+		as->as_heapStart = as->as_vbase2 + (as->as_npages2 * PAGE_SIZE) + 1;
 		as->as_heapEnd = as->as_heapStart; 	
 		return 0;
 	}
@@ -250,7 +257,8 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 	 */
 
 	/* Initial user-level stack pointer */
-	*stackptr = USERSTACKTOP;
+	*stackptr = USERSTACK;
+	(void) as;
 	
 	return 0;
 }
@@ -266,7 +274,7 @@ int as_get_permissions(struct addrspace * as, vaddr_t faultaddress){
         vtop1 = vbase1 + as->as_npages1 * PAGE_SIZE;
         vbase2 = as->as_vbase2;
         vtop2 = vbase2 + as->as_npages2 * PAGE_SIZE;
-        stackbase = USERSTACK - DUMBVM_STACKPAGES * PAGE_SIZE;
+        stackbase = USERSTACK - SMARTVM_STACKPAGES * PAGE_SIZE;
         stacktop = USERSTACK;
         heapStart = as->as_heapStart;
         heapEnd = as->as_heapEnd;

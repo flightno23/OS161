@@ -8,7 +8,8 @@
 #include <mips/tlb.h>
 #include <addrspace.h>
 #include <vm.h>
-#include <kern/coremap.h>
+#include <kern/coremap.h> /* For access to the coremap interface */
+#include <kern/pageTable.h> /* For access to the pageTable interface */
 
 /* Our very own smart VM - work in progress */
 
@@ -32,6 +33,9 @@ bool has_vm_boot = false;
 
 /* function prototype for page_nalloc */
 static paddr_t page_nalloc(int);
+
+/* function prototype for make_page_avail  */
+static int make_page_avail(void);
 
 
 /* function that gets npages number of pages and returns the physical address of the start point */
@@ -208,7 +212,7 @@ int
 vm_fault(int faulttype, vaddr_t faultaddress) {
 	
 	struct addrspace * as;
-	vaddr_t vbase1, vtop1, vbase2, vtop2, stackbase, stacktop, heapstart, heapend;
+	vaddr_t vbase1, vtop1, vbase2, vtop2, stackbase, stacktop, heapStart, heapEnd;
 	int permissions;
 	
 	// cleaning up the address (only high 20 bits required)
@@ -222,27 +226,23 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 
 	/* Assert that the address space has been set up properly. */
 	KASSERT(as->as_vbase1 != 0);
-	KASSERT(as->as_pbase1 != 0);
 	KASSERT(as->as_npages1 != 0);
 	KASSERT(as->as_vbase2 != 0);
-	KASSERT(as->as_pbase2 != 0);
 	KASSERT(as->as_npages2 != 0);
-	KASSERT(as->as_stackpbase != 0);
+	KASSERT(as->as_stackvbase != 0);
 	KASSERT((as->as_vbase1 & PAGE_FRAME) == as->as_vbase1);
-	KASSERT((as->as_pbase1 & PAGE_FRAME) == as->as_pbase1);
 	KASSERT((as->as_vbase2 & PAGE_FRAME) == as->as_vbase2);
-	KASSERT((as->as_pbase2 & PAGE_FRAME) == as->as_pbase2);
-	KASSERT((as->as_stackpbase & PAGE_FRAME) == as->as_stackpbase);
+	KASSERT((as->as_stackvbase & PAGE_FRAME) == as->as_stackvbase);
 	
 	// collecting information about the address space
 	vbase1 = as->as_vbase1;
 	vtop1 = vbase1 + as->as_npages1 * PAGE_SIZE;
 	vbase2 = as->as_vbase2;
 	vtop2 = vbase2 + as->as_npages2 * PAGE_SIZE;
-	stackbase = USERSTACK - DUMBVM_STACKPAGES * PAGE_SIZE;
+	stackbase = as->as_stackvbase;
 	stacktop = USERSTACK;
-	heapstart = as->as_heapStart;
-	heapend = as->as_heapEnd;
+	heapStart = as->as_heapStart;
+	heapEnd = as->as_heapEnd;
 	 
 	// Now, check if the faultaddress is a valid one
 	if (faultaddress >= vbase1 && faultaddress < vtop1) {
@@ -265,13 +265,12 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 	// Next, deal with VM_FAULT_READ and VM_FAULT_WRITE
 	if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE) {
 		struct page_table_entry * tempPTE;
-		tempPTE = pgdir_walk();	// walk through the page table and find the PTE
+		tempPTE = pgdir_walk(faultaddress);	// walk through the page table and find the PTE
 
 		if (tempPTE == NULL) {	// no entry found, create a new entry and store in the page table
 			paddr_t tempPa;
-			tempPa = page_alloc(as, faultaddress);
-			
-			tempPTE = addPTE(as,va,tempPa);
+			tempPa = page_alloc(as, faultaddress);	
+			tempPTE = addPTE(as, faultaddress, tempPa);
 		}
 
 		// Call tlb_random after the packing the bits
@@ -285,8 +284,8 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 		/* checking if the page is actually writable */
 		permissions = as_get_permissions(as, faultaddress);
 		if (((permissions & 2) >> 1) == 1) {
-			paddr paRead;
-			vaddr vaRead;
+			paddr_t paRead;
+			vaddr_t vaRead;
 			
 			int result = tlb_probe(faultaddress, 0);
 			tlb_read(&vaRead, &paRead, result);
@@ -305,7 +304,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 
 
 /* Method to look for a free physical page or finds a victim according to timestamp to throw out */
-int make_page_avail (){
+static int make_page_avail (){
 
         time_t min_time;
         min_time = MAX_TIME;
@@ -342,11 +341,13 @@ paddr_t page_alloc(struct addrspace *as, vaddr_t va){
 	lock_acquire (coremapLock);
 	
 	index = make_page_avail();	// Find an index in coremap with FREE page or victim page that is not FIXED
-	bzero((void*)index*PAGE_SIZE, PAGE_SIZE); // Zero the said PAGE
-	coremap[index]->as = as;		// coremap entry now point to this PAGE
-	coremap[index]->va = va;
-	coremap[index]->state = DIRTY_PAGE;
-	coremap[index]->npages = 1;
+	
+	bzero((void*)(index*PAGE_SIZE), PAGE_SIZE); // Zero the said PAGE
+	
+	coremap[index].as = as;		// coremap entry now point to this PAGE
+	coremap[index].va = va;
+	coremap[index].state = DIRTY_PAGE;
+	coremap[index].npages = 1;
 	
 	lock_release(coremapLock);
 
@@ -366,7 +367,7 @@ void page_free(vaddr_t va){
 	
 
 	for (int i=0; i < NUM_TLB; i++){
-
+		
 		tlb_read(&ehi, &elo, i);
 		if(ehi == (va & PAGE_FRAME)){
 			
