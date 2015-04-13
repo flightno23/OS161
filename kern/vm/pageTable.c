@@ -111,9 +111,11 @@ struct page_table_entry * copyPageTable(struct page_table_entry * firstNode) {
 	while (temp != NULL) {	
 		struct page_table_entry * newNode = kmalloc(sizeof(struct page_table_entry));
 		newNode->va = temp->va;
-		newNode->permissions = temp->permissions;	
+		newNode->permissions = temp->permissions;
+		newNode->state = temp->state;	
 		newNode->next = newFirstNode;
 		newFirstNode = newNode;
+		temp = temp->next;
 	}
 
 	return newFirstNode;
