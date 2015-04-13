@@ -65,8 +65,8 @@ as_create(void)
 	as->as_npages1 = 0;
 	as->as_vbase2 = 0;
 	as->as_npages2 = 0;
-	as->as_stackvbase = 0;	// base of the stack . Stack goes from as_stackvbase -> stacktop
-	as->as_stacknPages = 0;	// number of pages held by the stack  
+	as->as_stackvbase = USERSTACK - SMARTVM_STACKPAGES * PAGE_SIZE;	// base of the stack . Stack goes from as_stackvbase -> stacktop
+	as->as_stacknPages = SMARTVM_STACKPAGES;	// number of pages held by the stack  
 	as->as_heapStart = 0;	// start point of the heap
 	as->as_heapEnd = 0;	// end point of the heap
 	as->as_heapnPages = 0;	// number of pages that the heap is currently holding
@@ -116,7 +116,7 @@ void
 as_destroy(struct addrspace *as)
 {
 	
-	deletePageTable();	
+	deletePageTable(as);	
 		
 	kfree(as);
 }
@@ -260,8 +260,8 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 
 	/* Initial user-level stack pointer */
 	*stackptr = USERSTACK;
-	as->as_stackvbase = USERSTACK;
-	
+	as->as_stackvbase |= 7;	// setting the stack permissions as (rwe) all enabled
+
 	return 0;
 }
 
@@ -272,11 +272,11 @@ int as_get_permissions(struct addrspace * as, vaddr_t faultaddress){
 	vaddr_t vbase1, vtop1, vbase2, vtop2, stackbase, stacktop, heapStart, heapEnd;
 	
 	// collecting information about the address space
-        vbase1 = as->as_vbase1;
+        vbase1 = (as->as_vbase1 & PAGE_FRAME);	// the & PAGE_FRAME is a mask to only extract the high 20 bits
         vtop1 = vbase1 + as->as_npages1 * PAGE_SIZE;
-        vbase2 = as->as_vbase2;
+        vbase2 = (as->as_vbase2 & PAGE_FRAME);
         vtop2 = vbase2 + as->as_npages2 * PAGE_SIZE;
-        stackbase = USERSTACK - SMARTVM_STACKPAGES * PAGE_SIZE;
+        stackbase = (as->as_stackvbase & PAGE_FRAME);
         stacktop = USERSTACK;
         heapStart = as->as_heapStart;
         heapEnd = as->as_heapEnd;
@@ -286,13 +286,13 @@ int as_get_permissions(struct addrspace * as, vaddr_t faultaddress){
 	// The permissions will be set in the last 3 bits
 	// 7 is 111 (binary)
 	if (faultaddress >= vbase1 && faultaddress < vtop1) {
-		permissions = (7 & vbase1); 
+		permissions = (7 & as->as_vbase1); 
         }
         else if (faultaddress >= vbase2 && faultaddress < vtop2) {
-		permissions = (7 & vbase2);
+		permissions = (7 & as->as_vbase2);
         }
         else if (faultaddress >= stackbase && faultaddress < stacktop) {
-		permissions = (7 & stackbase);
+		permissions = (7 & as->as_stackvbase);
         }
         else if (faultaddress >= heapStart && faultaddress < heapEnd) {
 		permissions = (7 & heapStart);

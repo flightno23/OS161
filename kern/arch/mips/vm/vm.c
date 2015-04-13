@@ -230,14 +230,11 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 	KASSERT(as->as_vbase2 != 0);
 	KASSERT(as->as_npages2 != 0);
 	KASSERT(as->as_stackvbase != 0);
-	KASSERT((as->as_vbase1 & PAGE_FRAME) == as->as_vbase1);
-	KASSERT((as->as_vbase2 & PAGE_FRAME) == as->as_vbase2);
-	KASSERT((as->as_stackvbase & PAGE_FRAME) == as->as_stackvbase);
 	
 	// collecting information about the address space
-	vbase1 = as->as_vbase1;
+	vbase1 = (as->as_vbase1 & PAGE_FRAME);
 	vtop1 = vbase1 + as->as_npages1 * PAGE_SIZE;
-	vbase2 = as->as_vbase2;
+	vbase2 = (as->as_vbase2 & PAGE_FRAME);
 	vtop2 = vbase2 + as->as_npages2 * PAGE_SIZE;
 	stackbase = as->as_stackvbase;
 	stacktop = USERSTACK;
@@ -277,7 +274,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 		permissions = as_get_permissions(as,faultaddress);
 		uint32_t addrHi, addrLo;
 		addrHi = faultaddress;
-		addrLo = ((permissions & 2) << 9) | (tempPTE->pa);
+		addrLo = (((permissions & 2)|1) << 9) | (tempPTE->pa);	// setting the dirty bit ( & with 010 - 2) and valid bit ( | with 1)
 		tlb_random(addrHi, addrLo);
 					
 	} else if (faulttype == VM_FAULT_READONLY) {  // Dealing with VM_FAULT_READONLY, when write was requested on address having read-only permission
@@ -333,6 +330,15 @@ static int make_page_avail (){
 
 }
 
+/* function to zero a particular region */
+static
+void
+as_zero_region(paddr_t paddr, unsigned npages)
+{
+	bzero((void *)PADDR_TO_KVADDR(paddr), npages * PAGE_SIZE);
+}
+
+
 /* Method to allocate one physical page to the user */
 paddr_t page_alloc(struct addrspace *as, vaddr_t va){
 
@@ -342,7 +348,7 @@ paddr_t page_alloc(struct addrspace *as, vaddr_t va){
 	
 	index = make_page_avail();	// Find an index in coremap with FREE page or victim page that is not FIXED
 	
-	bzero((void*)(index*PAGE_SIZE), PAGE_SIZE); // Zero the said PAGE
+	as_zero_region(index * PAGE_SIZE, 1); // Zero the said PAGE
 	
 	coremap[index].as = as;		// coremap entry now point to this PAGE
 	coremap[index].va = va;

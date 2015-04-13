@@ -26,9 +26,9 @@ struct page_table_entry * pgdir_walk(vaddr_t va) {
 }
 
 /* method that deletes the entire page table */
-void deletePageTable() {
+void deletePageTable(struct addrspace * as) {
 	// get the first node of the current address space
-	struct page_table_entry * firstPTE = curthread->t_addrspace->firstNode;
+	struct page_table_entry * firstPTE = as->firstNode;
 	struct page_table_entry * temp;
 	
 	// loop from the first Node to the end
@@ -80,17 +80,16 @@ struct page_table_entry *  addPTE(struct addrspace * as, vaddr_t va,paddr_t pa) 
 	pteToAdd->pa = pa;
 	pteToAdd->state = DIRTY_PAGE;
 	pteToAdd->permissions = as_get_permissions(as,va);
-	struct page_table_entry * firstNode = curthread->t_addrspace->firstNode;
 
 	// if firstNode is not initialised, set this to the first node 
-	if (firstNode == NULL) {
-		firstNode = pteToAdd;
+	if (curthread->t_addrspace->firstNode == NULL) {
+		curthread->t_addrspace->firstNode = pteToAdd;
 	}	
 
 	// Else, insert into head of LL
 	else{
-		pteToAdd->next = firstNode;
-		firstNode = pteToAdd;
+		pteToAdd->next = curthread->t_addrspace->firstNode;
+		curthread->t_addrspace->firstNode = pteToAdd;
 	}
 
 	return pteToAdd;		

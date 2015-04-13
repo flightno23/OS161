@@ -10,7 +10,7 @@ struct page_table_entry {
 	// states, permissions information , etc .. add later as needed 
 
 	int state;
-	int permissions:3;
+	int permissions;
 	struct page_table_entry * next;
 };
 
@@ -25,7 +25,7 @@ struct page_table_entry * pgdir_walk(vaddr_t va);
 void deletePTE(vaddr_t va);
 
 /* method to delete the entire page table structure - freeing memory carefully */
-void deletePageTable(void);
+void deletePageTable(struct addrspace * as);
 
 /* method to copy the linked list page table structure for as_copy */
 struct page_table_entry * copyPageTable(struct page_table_entry * firstNode);
