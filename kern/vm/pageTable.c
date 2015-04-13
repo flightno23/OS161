@@ -80,6 +80,7 @@ struct page_table_entry *  addPTE(struct addrspace * as, vaddr_t va,paddr_t pa) 
 	pteToAdd->pa = pa;
 	pteToAdd->state = DIRTY_PAGE;
 	pteToAdd->permissions = as_get_permissions(as,va);
+	pteToAdd->next = NULL;
 
 	// if firstNode is not initialised, set this to the first node 
 	if (curthread->t_addrspace->firstNode == NULL) {
