@@ -129,18 +129,19 @@ as_activate(struct addrspace *as)
 	/*
 	 * Write this.
 	 */	
-	int i, spl;
+	int i;
 
 	(void)as;
 
 	/* Disable interrupts on this CPU while frobbing the TLB. */
-	spl = splhigh();
+	spinlock_acquire(&tlb_spinlock);
 
 	for (i=0; i<NUM_TLB; i++) {
 		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
 	}
-
-	splx(spl);
+	
+	spinlock_release(&tlb_spinlock);
+	
 }
 
 /*

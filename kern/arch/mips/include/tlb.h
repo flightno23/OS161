@@ -30,6 +30,11 @@
 #ifndef _MIPS_TLB_H_
 #define _MIPS_TLB_H_
 
+#include <spinlock.h>
+
+/* defining the spinlock to protect the tlb */
+struct spinlock tlb_spinlock;
+
 /*
  * MIPS-specific TLB access functions.
  *

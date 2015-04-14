@@ -96,6 +96,9 @@ vm_bootstrap(void)
 	has_vm_boot = true;	
 	coremapLock = lock_create("coremap lock"); // initializing the lock for the coremap array
 
+	/* Step 4 - initialise the tlb spinlock also */
+	spinlock_init(&tlb_spinlock);
+
 }
 
 /* function to allocate kernel pages - if (n>1), the pages have to be continuous */
@@ -268,14 +271,20 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 			paddr_t tempPa;
 			tempPa = page_alloc(as, faultaddress);	
 			tempPTE = addPTE(as, faultaddress, tempPa);
+		} else if (tempPTE->pa == 0) {
+			tempPTE->pa = page_alloc(as, faultaddress);
 		}
 
 		// Call tlb_random after the packing the bits
-		permissions = as_get_permissions(as,faultaddress);
+		permissions = tempPTE->permissions;
 		uint32_t addrHi, addrLo;
 		addrHi = faultaddress;
 		addrLo = (((permissions & 2)|1) << 9) | (tempPTE->pa);	// setting the dirty bit ( & with 010 - 2) and valid bit ( | with 1)
+		
+		// insert into TLB
+		spinlock_acquire(&tlb_spinlock);
 		tlb_random(addrHi, addrLo);
+		spinlock_release(&tlb_spinlock);
 					
 	} else if (faulttype == VM_FAULT_READONLY) {  // Dealing with VM_FAULT_READONLY, when write was requested on address having read-only permission
 		/* checking if the page is actually writable */
@@ -284,10 +293,14 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 			paddr_t paRead;
 			vaddr_t vaRead;
 			
+			spinlock_acquire(&tlb_spinlock);
+
 			int result = tlb_probe(faultaddress, 0);
 			tlb_read(&vaRead, &paRead, result);
 			paRead |= (1 << 10); // setting the dirty bit to 1
 			tlb_write(vaRead, paRead, result);
+
+			spinlock_release(&tlb_spinlock);
  
 		} else {
 			/* panic or kill the process */
@@ -367,10 +380,9 @@ void page_free(vaddr_t va){
 
 	/* Find if the page is in the TLB and shoot it down */
 
-	int spl;
-	spl = splhigh();
-
 	uint32_t ehi, elo;
+	
+	spinlock_acquire(&tlb_spinlock);	
 
 	for (int i=0; i < NUM_TLB; i++){
 		
@@ -382,7 +394,7 @@ void page_free(vaddr_t va){
 		}
 	}
 
-	splx(spl);
+	spinlock_release(&tlb_spinlock);
 
 	/* Free the corresponding coremap entry */
 	lock_acquire(coremapLock);  //optimize lock

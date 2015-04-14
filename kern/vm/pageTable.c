@@ -71,7 +71,7 @@ void deletePTE(vaddr_t va) {
 }
 
 /* method to add a page table entry into the page table (this inserts into head of linked list) */
-struct page_table_entry *  addPTE(struct addrspace * as, vaddr_t va,paddr_t pa) {
+struct page_table_entry * addPTE(struct addrspace * as, vaddr_t va, paddr_t pa) {
 	
 	struct page_table_entry * pteToAdd;
 	pteToAdd = kmalloc(sizeof(struct page_table_entry));
@@ -113,7 +113,8 @@ struct page_table_entry * copyPageTable(struct page_table_entry * firstNode) {
 		struct page_table_entry * newNode = kmalloc(sizeof(struct page_table_entry));
 		newNode->va = temp->va;
 		newNode->permissions = temp->permissions;
-		newNode->state = temp->state;	
+		newNode->state = temp->state;
+		newNode->pa = 0;	
 		newNode->next = newFirstNode;
 		newFirstNode = newNode;
 		temp = temp->next;
