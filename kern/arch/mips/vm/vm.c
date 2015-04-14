@@ -116,6 +116,7 @@ vaddr_t alloc_kpages(int npages) {
 	
 		pa = page_nalloc(npages);
 		if (pa == 0) {
+			lock_release(coremapLock);
 			return 0;
 		}
 
