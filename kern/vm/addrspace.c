@@ -91,8 +91,6 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	 * Write this.
 	 */
 
-	// copy the page table of the old address space
-	newas->firstNode = copyPageTable(old->firstNode);
 	
 	// copy the region contents of the address space
 			
@@ -105,7 +103,10 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	newas->as_heapStart = old->as_heapStart;	// start point of the heap
 	newas->as_heapEnd = old->as_heapEnd;	// end point of the heap
 	newas->as_heapnPages = old->as_heapnPages;	// number of pages that the heap is currently holding
-
+	
+	
+	// copy the page table of the old address space
+	newas->firstNode = copyPageTable(old->firstNode, newas);
 	
 	*ret = newas;
 	return 0;

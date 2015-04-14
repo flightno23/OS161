@@ -97,7 +97,7 @@ struct page_table_entry * addPTE(struct addrspace * as, vaddr_t va, paddr_t pa) 
 }
 
 /* method to copy a page table given the first node of the page table to be copied */
-struct page_table_entry * copyPageTable(struct page_table_entry * firstNode) {
+struct page_table_entry * copyPageTable(struct page_table_entry * firstNode, struct addrspace * as) {
 
 	// if there is nothing to copy, return NULL
 	if (firstNode == NULL) {
@@ -114,7 +114,11 @@ struct page_table_entry * copyPageTable(struct page_table_entry * firstNode) {
 		newNode->va = temp->va;
 		newNode->permissions = temp->permissions;
 		newNode->state = temp->state;
-		newNode->pa = temp->pa;	// not sure about this . could be 0?	
+		
+		// Allocate a new page and move contents from the old page physical address to the new page
+		newNode->pa = page_alloc(as, newNode->va);
+		memcpy((void *) PADDR_TO_KVADDR(newNode->pa), (const void *) PADDR_TO_KVADDR(temp->pa), PAGE_SIZE);
+			
 		newNode->next = newFirstNode;
 		newFirstNode = newNode;
 		temp = temp->next;
