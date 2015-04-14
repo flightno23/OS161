@@ -114,7 +114,7 @@ struct page_table_entry * copyPageTable(struct page_table_entry * firstNode) {
 		newNode->va = temp->va;
 		newNode->permissions = temp->permissions;
 		newNode->state = temp->state;
-		newNode->pa = 0;	
+		newNode->pa = temp->pa;	// not sure about this . could be 0?	
 		newNode->next = newFirstNode;
 		newFirstNode = newNode;
 		temp = temp->next;

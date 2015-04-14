@@ -271,9 +271,11 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 			paddr_t tempPa;
 			tempPa = page_alloc(as, faultaddress);	
 			tempPTE = addPTE(as, faultaddress, tempPa);
-		} else if (tempPTE->pa == 0) {
+		} 
+
+		/*else if (tempPTE->pa == 0) {
 			tempPTE->pa = page_alloc(as, faultaddress);
-		}
+		} */
 
 		// Call tlb_random after the packing the bits
 		permissions = tempPTE->permissions;
