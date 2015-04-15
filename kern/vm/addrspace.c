@@ -131,9 +131,11 @@ as_activate(struct addrspace *as)
 	/*
 	 * Write this.
 	 */	
-	int i;
+	int i, spl;
 
 	(void)as;
+
+	spl = splhigh();
 
 	/* Disable interrupts on this CPU while frobbing the TLB. */
 	spinlock_acquire(&tlb_spinlock);
@@ -143,6 +145,8 @@ as_activate(struct addrspace *as)
 	}
 	
 	spinlock_release(&tlb_spinlock);
+
+	splx(spl);
 	
 }
 

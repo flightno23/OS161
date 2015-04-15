@@ -34,7 +34,7 @@ void deletePageTable(struct addrspace * as) {
 	// loop from the first Node to the end
 	while (firstPTE != NULL) {
 		temp = firstPTE;
-		page_free(temp->va);
+		page_free(as, temp->va);
 		firstPTE = firstPTE->next;
 		kfree(temp);
 	}

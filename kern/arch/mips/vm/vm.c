@@ -217,7 +217,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 	
 	struct addrspace * as;
 	vaddr_t vbase1, vtop1, vbase2, vtop2, stackbase, stacktop, heapStart, heapEnd;
-	int permissions;
+	int permissions; //, spl;
 	
 	// cleaning up the address (only high 20 bits required)
 	faultaddress &= PAGE_FRAME;
@@ -285,9 +285,13 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 		addrLo = (((permissions & 2)|1) << 9) | (tempPTE->pa);	// setting the dirty bit ( & with 010 - 2) and valid bit ( | with 1)
 		
 		// insert into TLB
+		//spl = splhigh();
+
 		spinlock_acquire(&tlb_spinlock);
 		tlb_random(addrHi, addrLo);
 		spinlock_release(&tlb_spinlock);
+		
+		//splx(spl);
 					
 	} else if (faulttype == VM_FAULT_READONLY) {  // Dealing with VM_FAULT_READONLY, when write was requested on address having read-only permission
 		/* checking if the page is actually writable */
@@ -296,6 +300,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 			paddr_t paRead;
 			vaddr_t vaRead;
 			
+	
 			spinlock_acquire(&tlb_spinlock);
 
 			int result = tlb_probe(faultaddress, 0);
@@ -304,6 +309,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 			tlb_write(vaRead, paRead, result);
 
 			spinlock_release(&tlb_spinlock);
+
  
 		} else {
 			/* panic or kill the process */
@@ -377,13 +383,16 @@ paddr_t page_alloc(struct addrspace *as, vaddr_t va){
 }
 
 /* Method to free a page with a start virtual address va */
-void page_free(vaddr_t va){
+void page_free(struct addrspace *as, vaddr_t va){
 
 	/* Define a spinlock to protect the TLB */
 
 	/* Find if the page is in the TLB and shoot it down */
 
 	uint32_t ehi, elo;
+	int spl;
+
+	spl = splhigh();	
 	
 	spinlock_acquire(&tlb_spinlock);	
 
@@ -399,11 +408,13 @@ void page_free(vaddr_t va){
 
 	spinlock_release(&tlb_spinlock);
 
+	splx(spl);
+
 	/* Free the corresponding coremap entry */
 	lock_acquire(coremapLock);  //optimize lock
 	for (int i = 0; i < total_page_num; i++){
 		
-		if(coremap[i].va == va){
+		if(coremap[i].va == va && coremap[i].as == as){
 			
 			coremap[i].as = NULL;
 			coremap[i].va = 0;
