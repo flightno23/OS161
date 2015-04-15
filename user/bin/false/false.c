@@ -44,5 +44,11 @@ main()
 	/* Just exit with a failure code. */
 	int pid = fork();
 	printf("%d", pid);
+	pid = fork();
+	printf("%d", pid);
+	pid = fork();
+	printf("%d", pid);
+	pid = fork();
+	printf("%d", pid);
 	exit(0);
 }
