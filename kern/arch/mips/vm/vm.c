@@ -338,13 +338,17 @@ static int make_page_avail (){
                         return i;
                 }
 
-                /* Checks to find the oldest page which is not fixed */
-                else if (coremap[i].state != FIXED_PAGE){
+                if (i == total_page_num - 1) {
+			index_to_ret = -1;
+		}
+		
+		/* Checks to find the oldest page which is not fixed */
+                /*else if (coremap[i].state != FIXED_PAGE){
                         if (coremap[i].timeStamp < min_time){
                                 min_time = coremap[i].timeStamp;
                                 index_to_ret = i;
                         }
-                }
+                }*/
 
         }
 
@@ -364,8 +368,10 @@ as_zero_region(paddr_t paddr, unsigned npages)
 /* Method to allocate one physical page to the user */
 paddr_t page_alloc(struct addrspace *as, vaddr_t va){
 
-	int index;
+	int index, spl;
 	
+	spl = splhigh();
+
 	lock_acquire (coremapLock);
 	
 	index = make_page_avail();	// Find an index in coremap with FREE page or victim page that is not FIXED
@@ -378,6 +384,8 @@ paddr_t page_alloc(struct addrspace *as, vaddr_t va){
 	coremap[index].npages = 1;
 	
 	lock_release(coremapLock);
+
+	splx(spl);
 
 	return index*PAGE_SIZE;	
 }
