@@ -69,8 +69,6 @@ as_create(void)
 	as->as_stacknPages = SMARTVM_STACKPAGES;	// number of pages held by the stack  
 	as->as_heapStart = 0;	// start point of the heap
 	as->as_heapEnd = 0;	// end point of the heap
-	as->as_heapnPages = 0;	// number of pages that the heap is currently holding
-	
 
 	return as;
 }
@@ -102,8 +100,6 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	newas->as_stacknPages = old->as_stacknPages;	// number of pages held by the stack  
 	newas->as_heapStart = old->as_heapStart;	// start point of the heap
 	newas->as_heapEnd = old->as_heapEnd;	// end point of the heap
-	newas->as_heapnPages = old->as_heapnPages;	// number of pages that the heap is currently holding
-	
 	
 	// copy the page table of the old address space
 	newas->firstNode = copyPageTable(old->firstNode, newas);
@@ -186,7 +182,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 	if (as->as_vbase1 == 0) {
 		as->as_vbase1 = vaddr;
 		as->as_npages1 = npages;
-		as->as_heapStart = as->as_vbase1 + (as->as_npages1 * PAGE_SIZE) + 1;
+		as->as_heapStart = (as->as_vbase1 & PAGE_FRAME) + (as->as_npages1 * PAGE_SIZE);
 		as->as_heapEnd = as->as_heapStart; 	
 		return 0;
 	}
@@ -194,7 +190,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 	if (as->as_vbase2 == 0) {
 		as->as_vbase2 = vaddr;
 		as->as_npages2 = npages;
-		as->as_heapStart = as->as_vbase2 + (as->as_npages2 * PAGE_SIZE) + 1;
+		as->as_heapStart = (as->as_vbase2 & PAGE_FRAME) + (as->as_npages2 * PAGE_SIZE);
 		as->as_heapEnd = as->as_heapStart; 	
 		return 0;
 	}
@@ -302,7 +298,7 @@ int as_get_permissions(struct addrspace * as, vaddr_t faultaddress){
 		permissions = (7 & as->as_stackvbase);
         }
         else if (faultaddress >= heapStart && faultaddress < heapEnd) {
-		permissions = (7 & heapStart);
+		permissions = 7;	// giving the heap full permissions 
         }
 	
 	return permissions;                

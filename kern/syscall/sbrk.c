@@ -8,7 +8,7 @@
 int sys_sbrk(int amount, int * retval) {
 	
 	// Get the end and start of the heap as well as the base of the stack
-/*	vaddr_t heapEnd, heapStart, stackBase;
+	vaddr_t heapEnd, heapStart, stackBase;
 
 	heapEnd = curthread->t_addrspace->as_heapEnd;
 	heapStart = curthread->t_addrspace->as_heapStart;
@@ -23,9 +23,9 @@ int sys_sbrk(int amount, int * retval) {
 
 	// We are now clear to go ahead with the system call. But, before that return the old heap end through retval
 	*retval = heapEnd;
-	heapEnd += amount; */
-	(void) amount;
-	(void) retval;	
+	heapEnd += amount;
+	curthread->t_addrspace->as_heapEnd = heapEnd;
+ 
 	// 0 indicates success
 	return 0;	
 	

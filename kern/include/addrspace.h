@@ -70,7 +70,6 @@ struct addrspace {
 	size_t as_stacknPages;	// number of pages held by the stack  
 	vaddr_t as_heapStart;	// start point of the heap
 	vaddr_t as_heapEnd;	// end point of the heap
-	size_t as_heapnPages;	// number of pages that the heap is currently holding
 	
 
 #endif
