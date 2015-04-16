@@ -50,6 +50,8 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	
 	int i = 0;
 	char junk[255];
+
+	// This while loop gets the number of arguments from userspace
 	while (*(char **)(args+i) != NULL) {
 		result = copyin(args+i, &random, sizeof(int));
 		if (result) return EFAULT;
@@ -57,9 +59,10 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 		if (result) return EFAULT; 
 		numArgs++;
 		i += 4;
-	}
-	
-	numArgs--;	
+	}	
+
+	/* get the arguments from userspace and store it into a array of strings called commands 
+		commmands[0] will store the program name, commands[1] onwards will store any extra arguments, if present*/	
 	char * commands[numArgs];
 	int pointersToGet[numArgs];
 	int j = 4;
