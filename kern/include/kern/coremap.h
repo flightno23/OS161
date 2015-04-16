@@ -13,7 +13,7 @@ struct coremap_entry{
 	vaddr_t va;
 	struct addrspace * as;
 	/* add more info here later */
-	time_t timeStamp;
+	uint32_t timeStamp;
 };
 
 /* total no of pages in the coremap */

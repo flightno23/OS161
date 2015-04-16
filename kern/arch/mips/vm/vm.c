@@ -10,6 +10,7 @@
 #include <vm.h>
 #include <kern/coremap.h> /* For access to the coremap interface */
 #include <kern/pageTable.h> /* For access to the pageTable interface */
+#include <clock.h> /* For access to the current time of the day for swapping victim finder algorithm */
 
 /* Our very own smart VM - work in progress */
 
@@ -158,6 +159,7 @@ static paddr_t page_nalloc(int npages) {
 	bool chunk_okay = false;
 	int coremapIndexFound = -1;
 	paddr_t addrToReturn; 
+	
 	/* scan the coremap to find continous chunk of free pages */
 	for (int i=0; i < total_page_num; i++) {
 
@@ -326,9 +328,9 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 static int make_page_avail (){
 
         time_t min_time;
-        min_time = MAX_TIME;
         int index_to_ret;
 
+        min_time = MAX_TIME;
 
         /*Find appropriate index of coremap to allocate a free page or the oldest page*/
         for (int i=0; i < total_page_num; i++){
@@ -336,19 +338,13 @@ static int make_page_avail (){
                 /* Checks to find a free page */
                 if (coremap[i].state == FREE_PAGE){
                         return i;
-                }
-
-                if (i == total_page_num - 1) {
-			index_to_ret = -1;
-		}
-		
-		/* Checks to find the oldest page which is not fixed */
-                /*else if (coremap[i].state != FIXED_PAGE){
+                }		/* Checks to find the oldest page which is not fixed */
+                else if (coremap[i].state != FIXED_PAGE){
                         if (coremap[i].timeStamp < min_time){
                                 min_time = coremap[i].timeStamp;
                                 index_to_ret = i;
                         }
-                }*/
+                }
 
         }
 
@@ -369,7 +365,9 @@ as_zero_region(paddr_t paddr, unsigned npages)
 paddr_t page_alloc(struct addrspace *as, vaddr_t va){
 
 	int index, spl;
-	
+	time_t secs;
+	uint32_t nanosecs;
+
 	spl = splhigh();
 
 	lock_acquire (coremapLock);
@@ -382,6 +380,8 @@ paddr_t page_alloc(struct addrspace *as, vaddr_t va){
 	coremap[index].va = va;
 	coremap[index].state = DIRTY_PAGE;
 	coremap[index].npages = 1;
+	gettime(&secs, &nanosecs);
+	coremap[index].timeStamp = nanosecs;	
 	
 	lock_release(coremapLock);
 
