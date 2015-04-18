@@ -333,6 +333,7 @@ file      vm/kmalloc.c
 
 optofffile dumbvm   vm/addrspace.c
 optofffile dumbvm   vm/pageTable.c
+optofffile dumbvm   vm/swapOperations.c
 
 #
 # Network

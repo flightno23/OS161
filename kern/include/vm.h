@@ -61,7 +61,7 @@ void vm_tlbshootdown(const struct tlbshootdown *);
 
 
 /* Allocate/free user defined pages */
-paddr_t page_alloc(struct addrspace *as, vaddr_t va);
+paddr_t page_alloc(struct addrspace *as, vaddr_t va, int index);
 void page_free(struct addrspace *as, vaddr_t va);
 
 

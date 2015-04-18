@@ -1,3 +1,6 @@
+#include <types.h>
+#include <addrspace.h>
+#include <kern/pageTable.h>
 
 #define MAX_SWAPPED_PAGES 256
 
@@ -46,7 +49,7 @@ void write_page(int indexToSwapOut);
 void read_page(int indexToSwapIn, int indexOnMap);
 
 /* Function to locate a free entry in the swapMap array */
-int locate_free_entry();
+int locate_free_entry(void);
 
 /* Function to locate the position of the page in the swap file by matching (as, va) as the key */
 int locate_swap_page(struct addrspace * as, vaddr_t va);

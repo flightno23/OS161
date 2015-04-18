@@ -9,8 +9,8 @@
 #include <addrspace.h>
 #include <vm.h>
 #include <kern/coremap.h> /* For access to the coremap interface */
-#include <kern/pageTable.h> /* For access to the pageTable interface */
 #include <clock.h> /* For access to the current time of the day for swapping victim finder algorithm */
+#include <kern/swapOperations.h>
 
 /* Our very own smart VM - work in progress */
 
@@ -36,7 +36,7 @@ bool has_vm_boot = false;
 static paddr_t page_nalloc(int);
 
 /* function prototype for make_page_avail  */
-static int make_page_avail(void);
+static bool make_page_avail(int *);
 
 
 /* function that gets npages number of pages and returns the physical address of the start point */
@@ -280,7 +280,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 		if (tempPTE == NULL) {	// no entry found, create a new entry and store in the page table
 			paddr_t tempPa;
 			
-			isCoremapFull = make_page_avail(as, faultaddress, &indexToAlloc);
+			isCoremapFull = make_page_avail(&indexToAlloc);
 
 			if (isCoremapFull == true) {	// if coremap is full, we need to make room for a page by swapping out victim
 				
@@ -292,7 +292,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 
 		} else if (tempPTE->inDisk == true) {	// if in disk
 			
-			isCoremapFull = make_page_avail(as, faultaddress, &indexToAlloc);
+			isCoremapFull = make_page_avail(&indexToAlloc);
 			
 			if (isCoremapFull == true) {	// if no room in memory, make room by swapping out a page
 				swapout(indexToAlloc);

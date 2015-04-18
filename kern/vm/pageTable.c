@@ -109,6 +109,7 @@ struct page_table_entry * copyPageTable(struct page_table_entry * firstNode, str
 	// else start copying the page table
 	struct page_table_entry * temp = firstNode;
 	struct page_table_entry * newFirstNode = NULL;
+	int pageIndex;
 	
 	// copy to head using a while loop as order doesn't matter
 	while (temp != NULL) {	
@@ -118,7 +119,7 @@ struct page_table_entry * copyPageTable(struct page_table_entry * firstNode, str
 		newNode->state = temp->state;
 		
 		// Allocate a new page and move contents from the old page physical address to the new page
-		newNode->pa = page_alloc(as, newNode->va);
+		newNode->pa = page_alloc(as, newNode->va, pageIndex); //Change this!!!
 		
 		spl = splhigh();
 

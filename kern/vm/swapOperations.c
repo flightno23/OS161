@@ -1,4 +1,28 @@
-#include <swapOperations.h> // for access to the swap operations interface 
+#include <types.h>
+#include <kern/errno.h>
+#include <lib.h>
+#include <spl.h>
+#include <spinlock.h>
+#include <thread.h>
+#include <current.h>
+#include <mips/tlb.h>
+#include <addrspace.h>
+#include <vm.h>
+#include <kern/coremap.h> /* For access to the coremap interface */
+#include <clock.h> /* For access to the current time of the day for swapping victim finder algorithm */
+#include <kern/swapOperations.h>
+#include <vfs.h>
+#include <kern/fcntl.h> //for the file permissions
+#include <uio.h>
+#include <kern/iovec.h>
+#include <vnode.h>
+
+static
+void
+as_zero_region(paddr_t paddr, unsigned npages)
+{
+	bzero((void *)PADDR_TO_KVADDR(paddr), npages * PAGE_SIZE);
+}
 
 /* Swaps out the page present at a particular index of the coremap 
 	as indicated by indexToSwap */
@@ -7,7 +31,7 @@ void swapout(int indexToSwap) {
 	// check if the firstSwap flag is uninitiliased and initialize the vnode for the swap file
 	if (firstSwapOccur == false) {
 		firstSwapOccur = true;
-		vfs_open("lhd0raw:", O_RDWR, 0, &swapFile); 	
+		vfs_open((char *)"lhd0raw:", O_RDWR, 0, &swapFile); 	
 	}
 
 	// declare variables
@@ -19,7 +43,7 @@ void swapout(int indexToSwap) {
 	probeResult = tlb_probe(coremap[indexToSwap].va, 0);
 	if (probeResult >= 0) {
 		// invalidate the entry by loading an unmapped address into the TLB
-		tlb_write(TLBHI_INVALID(probeResult), TLBLO_INVALID(), i);	
+		tlb_write(TLBHI_INVALID(probeResult), TLBLO_INVALID(), probeResult);	
 	} else {
 		// do nothing
 	}
@@ -52,7 +76,7 @@ void swapin(struct page_table_entry * tempPTE, int indexToSwap) {
 	
 	int swapMapLocation;
 	/* Step 1: locate the page on disk using the page table entry and the swapMap */
-	swapMapLocation = locate_swap_page(tempPTE->as, tempPTE->va);	
+	swapMapLocation = locate_swap_page(curthread->t_addrspace, tempPTE->va);	
 
 	/* Step 2: Copy the contents from disk to the index designated for the swap in operation */
 	read_page(indexToSwap, swapMapLocation);
@@ -84,7 +108,7 @@ void write_page(int indexToSwapOut) {
 		swapMapOffset = locate_free_entry();
 	}
 
-	iov.iov_kbase = PADDR_TO_KVADDR(indexToSwapOut*PAGE_SIZE);
+	iov.iov_kbase = (void*)PADDR_TO_KVADDR(indexToSwapOut*PAGE_SIZE);
 	iov.iov_len = PAGE_SIZE;
 	user.uio_iov = &iov;
 	user.uio_iovcnt = 1;
@@ -108,7 +132,7 @@ void read_page(int indexToSwapIn, int indexOnMap) {
 	struct iovec iov;
 	struct uio user;
 
-	iov.iov_kbase = PADDR_TO_KVADDR(indexToSwapIn * PAGE_SIZE);
+	iov.iov_kbase = (void*)PADDR_TO_KVADDR(indexToSwapIn * PAGE_SIZE);
 	iov.iov_len = PAGE_SIZE;
 	user.uio_iov = &iov;
 	user.uio_iovcnt = 1;
