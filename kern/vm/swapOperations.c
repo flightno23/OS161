@@ -50,11 +50,15 @@ void swapout(int indexToSwap) {
 	as indicated by indexToSwap */
 void swapin(struct page_table_entry * tempPTE, int indexToSwap) {
 	
+	int swapMapLocation;
 	/* Step 1: locate the page on disk using the page table entry and the swapMap */
+	swapMapLocation = locate_swap_page(tempPTE->as, tempPTE->va);	
 
 	/* Step 2: Copy the contents from disk to the index designated for the swap in operation */
+	read_page(indexToSwap, swapMapLocation);
 
 	/* Step 3: Update the page table entry to indicate that the page is in memory */
+	tempPTE->inDisk = false;
 
 }
 
@@ -66,17 +70,59 @@ void swapin(struct page_table_entry * tempPTE, int indexToSwap) {
 void write_page(int indexToSwapOut) {
 	
 	/* Step 1: check if the page contents already exist in the swap file, if so overwrite it */
+	struct iovec iov;
+	struct uio user;
 
+	int swapMapOffset = locate_swap_page(coremap[indexToSwapOut].as, coremap[indexToSwapOut].va);
 
-	/* Step 2: if not, find a free swap entry in the swapMap and write to that region */
+	if (swapMapOffset >= 0) {
+	
+		//Do Nothing	
+	
+	} else { /* Step 2: if not, find a free swap entry in the swapMap and write to that region */
+	
+		swapMapOffset = locate_free_entry();
+	}
 
+	iov.iov_kbase = PADDR_TO_KVADDR(indexToSwapOut*PAGE_SIZE);
+	iov.iov_len = PAGE_SIZE;
+	user.uio_iov = &iov;
+	user.uio_iovcnt = 1;
+	user.uio_offset = swapMapOffset * PAGE_SIZE;
+	user.uio_resid = PAGE_SIZE;
+	user.uio_rw = UIO_WRITE;
+	user.uio_segflg = UIO_SYSSPACE;
+	user.uio_space = coremap[indexToSwapOut].as;
+	
+	int err = VOP_WRITE(swapFile, &user);
+	KASSERT(err == 0);
+	KASSERT(PAGE_SIZE-user.uio_resid == PAGE_SIZE);
 
+	return;
+		
 } 
 
 void read_page(int indexToSwapIn, int indexOnMap) {
 	
 	/* Step 1: Initialise the uio and read from the file into the area of physical memory */
+	struct iovec iov;
+	struct uio user;
 
+	iov.iov_kbase = PADDR_TO_KVADDR(indexToSwapIn * PAGE_SIZE);
+	iov.iov_len = PAGE_SIZE;
+	user.uio_iov = &iov;
+	user.uio_iovcnt = 1;
+	user.uio_offset = indexOnMap * PAGE_SIZE;
+	user.uio_resid = PAGE_SIZE;
+	user.uio_rw = UIO_READ;
+	user.uio_segflg = UIO_SYSSPACE;
+	user.uio_space = coremap[indexToSwapIn].as;
+	
+	int err = VOP_READ(swapFile, &user);
+	KASSERT(err == 0);
+	KASSERT(PAGE_SIZE-user.uio_resid == PAGE_SIZE);
+
+	return;
 
 }
 
@@ -85,6 +131,14 @@ int locate_free_entry() {
 	
 	/* Step 1: Find an entry that is not pointing to a page and return that 
 		or else return -1 to indicate that the swapMap is full  */
+	for (int i=0; i < MAX_SWAPPED_PAGES; i++){
+
+		if(swapMap[i] == NULL){
+			return i;
+		}
+	}
+
+	return -1;
 
 }
 
@@ -93,7 +147,13 @@ int locate_swap_page(struct addrspace * as, vaddr_t va) {
 	
 	/* Step 1: Find the location of the page in the swapMap by matching with as and va 
 		or else return -1 to indicate no match found */
+	for(int i=0; i < MAX_SWAPPED_PAGES; i++){
+		if(swapMap[i]->as == as && swapMap[i]->va == va){
+			return i;
+		}
+	}
 
+	return -1;
 
 }
 
