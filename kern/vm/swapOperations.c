@@ -49,7 +49,7 @@ void swapout(int indexToSwap) {
 	}
 
 	/* Step 2: Copy the contents of the page to the disk if page is not clean */		
-	if (coremap[indexToSwap].state != 2) {
+	if (coremap[indexToSwap].state != CLEAN_PAGE) {
 		write_page(indexToSwap);
 	}
 
@@ -75,14 +75,25 @@ void swapout(int indexToSwap) {
 void swapin(struct page_table_entry * tempPTE, int indexToSwap) {
 	
 	int swapMapLocation;
+	time_t secs; 
+	uint32_t nanosecs;
 	/* Step 1: locate the page on disk using the page table entry and the swapMap */
 	swapMapLocation = locate_swap_page(curthread->t_addrspace, tempPTE->va);	
 
 	/* Step 2: Copy the contents from disk to the index designated for the swap in operation */
 	read_page(indexToSwap, swapMapLocation);
 
-	/* Step 3: Update the page table entry to indicate that the page is in memory */
+	/* Step 3: Update the page table entry and the coremap to indicate that the page is in memory */
+	tempPTE->pa = indexToSwap * PAGE_SIZE;
+	tempPTE->state = CLEAN_PAGE; 
 	tempPTE->inDisk = false;
+
+	coremap[indexToSwap].as = curthread->t_addrspace;
+	coremap[indexToSwap].va = tempPTE->va;
+	coremap[indexToSwap].state = CLEAN_PAGE;
+	coremap[indexToSwap].npages = 1;
+	gettime(&secs, &nanosecs);
+	coremap[indexToSwap].timeStamp = nanosecs;
 
 }
 
@@ -106,6 +117,13 @@ void write_page(int indexToSwapOut) {
 	} else { /* Step 2: if not, find a free swap entry in the swapMap and write to that region */
 	
 		swapMapOffset = locate_free_entry();
+		struct swapPageEntry * tempPage = kmalloc(sizeof(struct swapPageEntry));
+	
+		tempPage->as = coremap[indexToSwapOut].as;
+		tempPage->va = coremap[indexToSwapOut].va;
+
+		swapMap[swapMapOffset] = tempPage;
+
 	}
 
 	iov.iov_kbase = (void*)PADDR_TO_KVADDR(indexToSwapOut*PAGE_SIZE);
@@ -116,7 +134,7 @@ void write_page(int indexToSwapOut) {
 	user.uio_resid = PAGE_SIZE;
 	user.uio_rw = UIO_WRITE;
 	user.uio_segflg = UIO_SYSSPACE;
-	user.uio_space = coremap[indexToSwapOut].as;
+	user.uio_space = NULL;
 	
 	int err = VOP_WRITE(swapFile, &user);
 	KASSERT(err == 0);
@@ -140,7 +158,7 @@ void read_page(int indexToSwapIn, int indexOnMap) {
 	user.uio_resid = PAGE_SIZE;
 	user.uio_rw = UIO_READ;
 	user.uio_segflg = UIO_SYSSPACE;
-	user.uio_space = coremap[indexToSwapIn].as;
+	user.uio_space = NULL;
 	
 	int err = VOP_READ(swapFile, &user);
 	KASSERT(err == 0);
@@ -172,6 +190,9 @@ int locate_swap_page(struct addrspace * as, vaddr_t va) {
 	/* Step 1: Find the location of the page in the swapMap by matching with as and va 
 		or else return -1 to indicate no match found */
 	for(int i=0; i < MAX_SWAPPED_PAGES; i++){
+		
+		if(swapMap[i] == NULL) continue; // continue if its null
+
 		if(swapMap[i]->as == as && swapMap[i]->va == va){
 			return i;
 		}

@@ -113,15 +113,15 @@ vaddr_t alloc_kpages(int npages) {
 			return 0;
 		}
 	} else {	// VM has bootstrapped , use page_nalloc
-		lock_acquire(coremapLock);
+		//lock_acquire(coremapLock);
 	
 		pa = page_nalloc(npages);
 		if (pa == 0) {
-			lock_release(coremapLock);
+			//lock_release(coremapLock);
 			return 0;
 		}
 
-		lock_release(coremapLock);
+		//lock_release(coremapLock);
 	}
 	return PADDR_TO_KVADDR(pa);
 }
