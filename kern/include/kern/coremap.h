@@ -14,6 +14,7 @@ struct coremap_entry{
 	struct addrspace * as;
 	/* add more info here later */
 	uint32_t timeStamp;
+
 };
 
 /* total no of pages in the coremap */
@@ -24,4 +25,5 @@ struct coremap_entry *coremap;
 
 /* lock for the coremap */
 struct lock * coremapLock;
+
 

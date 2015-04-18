@@ -264,21 +264,44 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 		return EFAULT;	// oops, you have reached an invalid region of the address space
 	}
 	
+	
+	/* VM_FAULTS will be processed serially by acquiring the coremap lock
+		DUMB idea but easy implementation possible this way */
+	lock_acquire(coremapLock);	
 
 	// Next, deal with VM_FAULT_READ and VM_FAULT_WRITE
 	if (faulttype == VM_FAULT_READ || faulttype == VM_FAULT_WRITE) {
 		struct page_table_entry * tempPTE;
-		tempPTE = pgdir_walk(faultaddress);	// walk through the page table and find the PTE
+		bool isCoremapFull = false;
+		int indexToAlloc;
+
+		tempPTE = pgdir_walk(as, faultaddress);	// walk through the page table and find the PTE
 
 		if (tempPTE == NULL) {	// no entry found, create a new entry and store in the page table
 			paddr_t tempPa;
-			tempPa = page_alloc(as, faultaddress);	
-			tempPTE = addPTE(as, faultaddress, tempPa);
-		} 
+			
+			isCoremapFull = make_page_avail(as, faultaddress, &indexToAlloc);
 
-		/*else if (tempPTE->pa == 0) {
-			tempPTE->pa = page_alloc(as, faultaddress);
-		} */
+			if (isCoremapFull == true) {	// if coremap is full, we need to make room for a page by swapping out victim
+				
+				swapout(indexToAlloc);
+			}  
+			
+			tempPa = page_alloc(as, faultaddress, indexToAlloc);	
+			tempPTE = addPTE(as, faultaddress, tempPa);
+
+		} else if (tempPTE->inDisk == true) {	// if in disk
+			
+			isCoremapFull = make_page_avail(as, faultaddress, &indexToAlloc);
+			
+			if (isCoremapFull == true) {	// if no room in memory, make room by swapping out a page
+				swapout(indexToAlloc);
+			}
+	
+			swapin(tempPTE, indexToAlloc);	// swap in the page to the particular index
+			
+
+		} 
 
 		// Call tlb_random after the packing the bits
 		permissions = tempPTE->permissions;
@@ -315,40 +338,48 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
  
 		} else {
 			/* panic or kill the process */
+			lock_release(coremapLock);
 			panic("user tried writing into a region without write permissions. WTF!\n");
 		}	
 	}
+
+	lock_release(coremapLock);
 	
 	return 0; // success
 		
 }
 
 
-/* Method to look for a free physical page or finds a victim according to timestamp to throw out */
-static int make_page_avail (){
+/* Method to look for a free physical page or finds a victim according to timestamp to swap out
+	returns
+	true - if coremap has a free page
+	false - if coremap is full and page needs to be swapped out
+ */
+static bool make_page_avail (int * index_to_ret){
 
         time_t min_time;
-        int index_to_ret;
 
         min_time = MAX_TIME;
 
         /*Find appropriate index of coremap to allocate a free page or the oldest page*/
         for (int i=0; i < total_page_num; i++){
+		
 
                 /* Checks to find a free page */
                 if (coremap[i].state == FREE_PAGE){
-                        return i;
+			*index_to_ret = i;
+                        return false;
                 }		/* Checks to find the oldest page which is not fixed */
                 else if (coremap[i].state != FIXED_PAGE){
                         if (coremap[i].timeStamp < min_time){
                                 min_time = coremap[i].timeStamp;
-                                index_to_ret = i;
+                                *index_to_ret = i;
                         }
                 }
 
         }
 
-        return index_to_ret;
+        return true;	// true indicates coremap is full and page needs to be swapped out
 
 }
 
@@ -362,17 +393,14 @@ as_zero_region(paddr_t paddr, unsigned npages)
 
 
 /* Method to allocate one physical page to the user */
-paddr_t page_alloc(struct addrspace *as, vaddr_t va){
+paddr_t page_alloc(struct addrspace *as, vaddr_t va, int index){
 
-	int index, spl;
+	int spl;
 	time_t secs;
 	uint32_t nanosecs;
 
 	spl = splhigh();
 
-	lock_acquire (coremapLock);
-	
-	index = make_page_avail();	// Find an index in coremap with FREE page or victim page that is not FIXED
 	
 	as_zero_region(index * PAGE_SIZE, 1); // Zero the said PAGE
 	
@@ -383,7 +411,6 @@ paddr_t page_alloc(struct addrspace *as, vaddr_t va){
 	gettime(&secs, &nanosecs);
 	coremap[index].timeStamp = nanosecs;	
 	
-	lock_release(coremapLock);
 
 	splx(spl);
 

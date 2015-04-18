@@ -12,6 +12,7 @@ struct page_table_entry {
 	int state;
 	int permissions;
 	struct page_table_entry * next;
+	bool inDisk;
 };
 
 
@@ -19,9 +20,9 @@ struct page_table_entry {
 struct page_table_entry * addPTE(struct addrspace * as, vaddr_t va, paddr_t pa);
 
 /* method to walk through the page table and find and entry that matches the virtual address */
-struct page_table_entry * pgdir_walk(vaddr_t va);
+struct page_table_entry * pgdir_walk(struct addrspace * as, vaddr_t va);
 
-/* method to delete an entry from the page from the page table */
+/* method to delete an entry from the page from the page table (Not used currently) */
 void deletePTE(vaddr_t va);
 
 /* method to delete the entire page table structure - freeing memory carefully */

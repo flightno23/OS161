@@ -6,9 +6,9 @@
 #include <spl.h>
 
 /* method to walk through the page table and find the matching entry if it exists, else return NULL */
-struct page_table_entry * pgdir_walk(vaddr_t va) {
+struct page_table_entry * pgdir_walk(struct addrspace * as, vaddr_t va) {
 	
-	struct page_table_entry * tempNode = curthread->t_addrspace->firstNode;
+	struct page_table_entry * tempNode = as->firstNode;
 	
 	// if page table has no entries, return NULL
 	if (tempNode == NULL) return NULL;
