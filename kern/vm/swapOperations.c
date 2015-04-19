@@ -31,7 +31,8 @@ void swapout(int indexToSwap) {
 	// check if the firstSwap flag is uninitiliased and initialize the vnode for the swap file
 	if (firstSwapOccur == false) {
 		firstSwapOccur = true;
-		vfs_open((char *)"lhd0raw:", O_RDWR, 0, &swapFile); 	
+		char swapFileName[] = "swapfile";
+		vfs_open(swapFileName, O_RDWR|O_CREAT|O_TRUNC, 0, &swapFile); 	
 	}
 
 	// declare variables
@@ -144,12 +145,12 @@ void write_page(int indexToSwapOut) {
 	user.uio_segflg = UIO_SYSSPACE;
 	user.uio_space = NULL;
 
-	VOP_STAT(swapFile, &st);
 	
 	int err = VOP_WRITE(swapFile, &user);
 	KASSERT(err == 0);
 	KASSERT(PAGE_SIZE-user.uio_resid == PAGE_SIZE);
 
+	VOP_STAT(swapFile, &st);
 	return;
 		
 } 
