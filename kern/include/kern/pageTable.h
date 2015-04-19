@@ -9,10 +9,10 @@ struct page_table_entry {
 
 	// states, permissions information , etc .. add later as needed 
 
-	int state;
-	int permissions;
+	uint32_t state:2;
+	uint32_t permissions:3;
 	struct page_table_entry * next;
-	bool inDisk;
+	bool inDisk:1;
 };
 
 

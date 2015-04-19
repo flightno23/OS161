@@ -8,12 +8,13 @@
 /* COREMAP structure */
 struct coremap_entry{
 
-	int npages; /* holds the number of continuous allocations */
-	int state; /* state of page - fixed, free, clean, dirty */
+	uint32_t npages:7; /* holds the number of continuous allocations */
+	uint32_t state:2; /* state of page - fixed, free, clean, dirty */
 	vaddr_t va;
 	struct addrspace * as;
 	/* add more info here later */
-	uint32_t timeStamp;
+	time_t secs;
+	uint32_t nanosecs;
 
 };
 

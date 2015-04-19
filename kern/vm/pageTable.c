@@ -15,7 +15,7 @@ struct page_table_entry * pgdir_walk(struct addrspace * as, vaddr_t va) {
 
 	// else, search for matching nodes
 	while (tempNode != NULL) {
-		if ( (tempNode->va & PAGE_FRAME) == va) {
+		if ( (tempNode->va) == va) {
 			return tempNode;
 		}
 		tempNode = tempNode->next;

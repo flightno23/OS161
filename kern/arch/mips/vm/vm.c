@@ -38,6 +38,9 @@ static paddr_t page_nalloc(int);
 /* function prototype for make_page_avail  */
 static bool make_page_avail(int *);
 
+/* function prototype for as_zero_region */
+static void as_zero_region(paddr_t, unsigned);
+
 
 /* function that gets npages number of pages and returns the physical address of the start point */
 static
@@ -116,10 +119,8 @@ vaddr_t alloc_kpages(int npages) {
 		//lock_acquire(coremapLock);
 	
 		pa = page_nalloc(npages);
-		if (pa == 0) {
-			//lock_release(coremapLock);
-			return 0;
-		}
+		
+		as_zero_region(pa, npages);	
 
 		//lock_release(coremapLock);
 	}
@@ -182,15 +183,24 @@ static paddr_t page_nalloc(int npages) {
 		}
 	}
 	
-	/* if the coremap is full, return a 0 signalling an error */
-	if (coremapIndexFound == -1) return 0;
-	
+	/* If the coremap is full, take pages from end of coremap (last 5 entries) */
+	if (coremapIndexFound == -1) {
+		for (int i=4; i >= 0; i--) {
+			if (coremap[total_page_num - 1 - i].state == FREE_PAGE) {
+				coremapIndexFound = total_page_num - 1 - i;
+				break;
+			}
+		}
+	}
+
 	/* now that coremap index to allocate has been found , allocate it and return the base physical address */
 	coremap[coremapIndexFound].npages = npages;
 	for (int i = 0; i < npages; i++) {
-		coremap[coremapIndexFound + i].state = FIXED_PAGE;
+		coremap[coremapIndexFound + i].state = FIXED_PAGE;	
+		coremap[coremapIndexFound + i].as = NULL;
+		coremap[coremapIndexFound + i].va = 0;		
 	}
-	
+		
 	/* return the physical address of the start point of the chunk of pages */
 	addrToReturn = coremapIndexFound * PAGE_SIZE;
 	
@@ -313,6 +323,8 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 		//spl = splhigh();
 
 		spinlock_acquire(&tlb_spinlock);
+		KASSERT(tlb_probe(addrHi, 0) == -1);
+
 		tlb_random(addrHi, addrLo);
 		spinlock_release(&tlb_spinlock);
 		
@@ -357,12 +369,14 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
  */
 static bool make_page_avail (int * index_to_ret){
 
-        time_t min_time;
+        time_t secs;
+	uint32_t nanosecs;
 
-        min_time = MAX_TIME;
+        secs = MAX_TIME;
+	nanosecs = 0;
 
         /*Find appropriate index of coremap to allocate a free page or the oldest page*/
-        for (int i=0; i < total_page_num; i++){
+        for (int i=0; i < total_page_num - 10; i++){
 		
 
                 /* Checks to find a free page */
@@ -371,10 +385,16 @@ static bool make_page_avail (int * index_to_ret){
                         return false;
                 }		/* Checks to find the oldest page which is not fixed */
                 else if (coremap[i].state != FIXED_PAGE){
-                        if (coremap[i].timeStamp < min_time){
-                                min_time = coremap[i].timeStamp;
+                        if (coremap[i].secs < secs){
+                                secs = coremap[i].secs;
+				nanosecs = coremap[i].nanosecs;
                                 *index_to_ret = i;
-                        }
+                        } else if(coremap[i].secs == secs) {
+				if (coremap[i].nanosecs < nanosecs) {
+					nanosecs = coremap[i].nanosecs;
+					*index_to_ret = i;
+				}
+			}
                 }
 
         }
@@ -409,7 +429,8 @@ paddr_t page_alloc(struct addrspace *as, vaddr_t va, int index){
 	coremap[index].state = DIRTY_PAGE;
 	coremap[index].npages = 1;
 	gettime(&secs, &nanosecs);
-	coremap[index].timeStamp = nanosecs;	
+	coremap[index].secs = secs;
+	coremap[index].nanosecs = nanosecs;	
 	
 
 	splx(spl);

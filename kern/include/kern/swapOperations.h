@@ -1,8 +1,9 @@
 #include <types.h>
 #include <addrspace.h>
 #include <kern/pageTable.h>
+#include <kern/stat.h>
 
-#define MAX_SWAPPED_PAGES 256
+#define MAX_SWAPPED_PAGES 2048
 
 /* global variable to indicate first swap out */
 bool firstSwapOccur;
@@ -21,6 +22,9 @@ struct swapPageEntry * swapMap[MAX_SWAPPED_PAGES];
 
 /* Global swapfile which holds the swapped pages - will be opened when the first swapout operation occurs */
 struct vnode * swapFile;
+
+/* stat of the swap file*/
+struct stat st;
 
 
 /* Swapping operations interface - 

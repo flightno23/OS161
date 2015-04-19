@@ -37,6 +37,8 @@ void swapout(int indexToSwap) {
 	// declare variables
 	int probeResult;
 	struct page_table_entry * pteOfSwap;
+	time_t secs;
+	uint32_t nanosecs;
 
 	/* Step 1: Remove the translation from the TLB if it exists */
 	// probe the TLB for the entry
@@ -54,7 +56,9 @@ void swapout(int indexToSwap) {
 	}
 
 	/* Step 3: Update the page table entry to indicate that the contents are on disk */
+	// if the swapout is 
 	pteOfSwap = pgdir_walk(coremap[indexToSwap].as, coremap[indexToSwap].va);
+	KASSERT(pteOfSwap != NULL);	// pgdir_walk should not return NULL
 	pteOfSwap->pa = 0;
 	pteOfSwap->inDisk = true;
 
@@ -64,7 +68,10 @@ void swapout(int indexToSwap) {
 	coremap[indexToSwap].va = 0;
 	coremap[indexToSwap].state = FREE_PAGE;
 	coremap[indexToSwap].npages = 0;
-	
+	gettime(&secs, &nanosecs);
+	coremap[indexToSwap].secs = secs;
+	coremap[indexToSwap].nanosecs = nanosecs;
+		
 	// zero the region
 	as_zero_region(indexToSwap*PAGE_SIZE, 1);
 	
@@ -93,7 +100,8 @@ void swapin(struct page_table_entry * tempPTE, int indexToSwap) {
 	coremap[indexToSwap].state = CLEAN_PAGE;
 	coremap[indexToSwap].npages = 1;
 	gettime(&secs, &nanosecs);
-	coremap[indexToSwap].timeStamp = nanosecs;
+	coremap[indexToSwap].secs = secs;
+	coremap[indexToSwap].nanosecs = nanosecs;
 
 }
 
@@ -135,6 +143,8 @@ void write_page(int indexToSwapOut) {
 	user.uio_rw = UIO_WRITE;
 	user.uio_segflg = UIO_SYSSPACE;
 	user.uio_space = NULL;
+
+	VOP_STAT(swapFile, &st);
 	
 	int err = VOP_WRITE(swapFile, &user);
 	KASSERT(err == 0);
