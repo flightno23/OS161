@@ -51,10 +51,9 @@ void swapout(int indexToSwap) {
 		// do nothing
 	}
 
-	/* Step 2: Copy the contents of the page to the disk if page is not clean */		
-	if (coremap[indexToSwap].state != CLEAN_PAGE) {
-		write_page(indexToSwap);
-	}
+	/* Step 2: Copy the contents of the page to the disk everytime (no concept of clean pages used) */		
+	write_page(indexToSwap);
+
 
 	/* Step 3: Update the page table entry to indicate that the contents are on disk */
 	// if the swapout is 
@@ -98,7 +97,7 @@ void swapin(struct page_table_entry * tempPTE, int indexToSwap) {
 
 	coremap[indexToSwap].as = curthread->t_addrspace;
 	coremap[indexToSwap].va = tempPTE->va;
-	coremap[indexToSwap].state = CLEAN_PAGE;
+	coremap[indexToSwap].state = DIRTY_PAGE;
 	coremap[indexToSwap].npages = 1;
 	gettime(&secs, &nanosecs);
 	coremap[indexToSwap].secs = secs;
