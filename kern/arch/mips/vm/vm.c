@@ -322,11 +322,11 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 		// insert into TLB
 		//spl = splhigh();
 
-		spinlock_acquire(&tlb_spinlock);
+		// spinlock_acquire(&tlb_spinlock);
 		KASSERT(tlb_probe(addrHi, 0) == -1);
 
 		tlb_random(addrHi, addrLo);
-		spinlock_release(&tlb_spinlock);
+		// spinlock_release(&tlb_spinlock);
 		
 		//splx(spl);
 					
@@ -338,14 +338,14 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 			vaddr_t vaRead;
 			
 	
-			spinlock_acquire(&tlb_spinlock);
+			// spinlock_acquire(&tlb_spinlock);
 
 			int result = tlb_probe(faultaddress, 0);
 			tlb_read(&vaRead, &paRead, result);
 			paRead |= (1 << 10); // setting the dirty bit to 1
 			tlb_write(vaRead, paRead, result);
 
-			spinlock_release(&tlb_spinlock);
+			// spinlock_release(&tlb_spinlock);
 
  
 		} else {
@@ -447,10 +447,11 @@ void page_free(struct addrspace *as, vaddr_t va){
 
 	uint32_t ehi, elo;
 	int spl;
-
+	
+	lock_acquire(coremapLock);
 	spl = splhigh();	
 	
-	spinlock_acquire(&tlb_spinlock);	
+	//spinlock_acquire(&tlb_spinlock);	
 
 	for (int i=0; i < NUM_TLB; i++){
 		
@@ -462,12 +463,12 @@ void page_free(struct addrspace *as, vaddr_t va){
 		}
 	}
 
-	spinlock_release(&tlb_spinlock);
+	//spinlock_release(&tlb_spinlock);
 
 	splx(spl);
 
 	/* Free the corresponding coremap entry */
-	lock_acquire(coremapLock);  //optimize lock
+//	lock_acquire(coremapLock);  //optimize lock (changed to beginning of function)
 	for (int i = 0; i < total_page_num; i++){
 		
 		if(coremap[i].va == va && coremap[i].as == as){
