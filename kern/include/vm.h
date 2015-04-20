@@ -59,6 +59,8 @@ void free_kpages(vaddr_t addr);
 void vm_tlbshootdown_all(void);
 void vm_tlbshootdown(const struct tlbshootdown *);
 
+/*Find victim page*/
+bool make_page_avail(int * index_to_ret);
 
 /* Allocate/free user defined pages */
 paddr_t page_alloc(struct addrspace *as, vaddr_t va, int index);

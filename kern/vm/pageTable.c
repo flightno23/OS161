@@ -1,9 +1,10 @@
 #include <types.h>
-#include <kern/pageTable.h> /* to get all the function prototypes in this file */
+//#include <kern/pageTable.h> /* to get all the function prototypes in this file */
 #include <current.h> /* for curthread */
 #include <lib.h> /* for kfree and other standard library functions */
 #include <kern/coremap.h> /* for constants such as DIRTY_PAGE, CLEAN_PAGE and functions defined in it */
 #include <spl.h>
+#include <kern/swapOperations.h>
 
 /* method to walk through the page table and find the matching entry if it exists, else return NULL */
 struct page_table_entry * pgdir_walk(struct addrspace * as, vaddr_t va) {
@@ -101,6 +102,7 @@ struct page_table_entry * addPTE(struct addrspace * as, vaddr_t va, paddr_t pa) 
 /* method to copy a page table given the first node of the page table to be copied */
 struct page_table_entry * copyPageTable(struct page_table_entry * firstNode, struct addrspace * as) {
 	int spl;
+	bool isCoremapFull;
 	
 	// if there is nothing to copy, return NULL
 	if (firstNode == NULL) {
@@ -111,14 +113,21 @@ struct page_table_entry * copyPageTable(struct page_table_entry * firstNode, str
 	struct page_table_entry * temp = firstNode;
 	struct page_table_entry * newFirstNode = NULL;
 	int pageIndex;
+
 	
 	// copy to head using a while loop as order doesn't matter
 	while (temp != NULL) {	
 		struct page_table_entry * newNode = kmalloc(sizeof(struct page_table_entry));
 		newNode->va = temp->va;
+		newNode->pa = 0;
 		newNode->permissions = temp->permissions;
 		newNode->state = temp->state;
+		newNode->inDisk = temp->inDisk;
+		isCoremapFull = make_page_avail(&pageIndex);
 		
+		if (isCoremapFull){
+			swapout(pageIndex);
+		}
 		// Allocate a new page and move contents from the old page physical address to the new page
 		newNode->pa = page_alloc(as, newNode->va, pageIndex); //Change this!!!
 		

@@ -36,7 +36,7 @@ bool has_vm_boot = false;
 static paddr_t page_nalloc(int);
 
 /* function prototype for make_page_avail  */
-static bool make_page_avail(int *);
+bool make_page_avail(int *);
 
 /* function prototype for as_zero_region */
 static void as_zero_region(paddr_t, unsigned);
@@ -367,7 +367,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 	true - if coremap has a free page
 	false - if coremap is full and page needs to be swapped out
  */
-static bool make_page_avail (int * index_to_ret){
+bool make_page_avail (int * index_to_ret){
 
         time_t secs;
 	uint32_t nanosecs;
