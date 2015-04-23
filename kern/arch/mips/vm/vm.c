@@ -186,8 +186,13 @@ static paddr_t page_nalloc(int npages) {
 		}
 	}
 	
-	KASSERT(coremap[coremapIndexFound].state == FREE_PAGE);	// assert that the page found is a FREE page
-	
+	// in case no chunk found swapout pages	
+	if (coremap[coremapIndexFound].state != FREE_PAGE) {
+
+		make_page_avail(&coremapIndexFound);
+		swapout(coremapIndexFound);
+
+	}	
 	/* If the coremap is full, take pages from end of coremap (last 5 entries) 
 	if (coremapIndexFound == -1) {
 		for (int i=4; i >= 0; i--) {
@@ -381,7 +386,7 @@ bool make_page_avail (int * index_to_ret){
 	nanosecs = 0;
 
         /*Find appropriate index of coremap to allocate a free page or the oldest page*/
-        for (int i=0; i < total_page_num - 10; i++){
+        for (int i=0; i < total_page_num - 20; i++){
 		
 
                 /* Checks to find a free page */
