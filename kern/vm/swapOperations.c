@@ -43,6 +43,8 @@ void swapout(int indexToSwap) {
 
 	/* Step 1: Remove the translation from the TLB if it exists */
 	// probe the TLB for the entry
+	//int spl = splhigh();
+	spinlock_acquire(&tlb_spinlock);
 	probeResult = tlb_probe(coremap[indexToSwap].va, 0);
 	if (probeResult >= 0) {
 		// invalidate the entry by loading an unmapped address into the TLB
@@ -50,7 +52,8 @@ void swapout(int indexToSwap) {
 	} else {
 		// do nothing
 	}
-
+	spinlock_release(&tlb_spinlock);
+	//splx(spl);
 	/* Step 2: Copy the contents of the page to the disk everytime (no concept of clean pages used) */		
 	write_page(indexToSwap);
 

@@ -130,16 +130,16 @@ vaddr_t alloc_kpages(int npages) {
 /* function to free the kernel pages */
 void free_kpages(vaddr_t addr) {
 	
-		
+	(void) addr;		
 	paddr_t pAddress = KVADDR_TO_PADDR(addr);	
-	/* find the coremap index of the address  */
+	// find the coremap index of the address  
 	int coremapIndex = ROUND_DOWN(pAddress, PAGE_SIZE) / PAGE_SIZE;
-	// int spl;
+	int spl;
 
-	//spl = splhigh();	
+	spl = splhigh();	
 
-	/* make the pages back to free and npages to 1 */
-	lock_acquire(coremapLock);
+	// make the pages back to free and npages to 1 
+	//lock_acquire(coremapLock);
 
 	int npages = coremap[coremapIndex].npages;
 	
@@ -148,9 +148,9 @@ void free_kpages(vaddr_t addr) {
 		coremap[coremapIndex+i].npages = 1;
 	}
 
-	lock_release(coremapLock);
+	//lock_release(coremapLock);
 	
-	//splx(spl);
+	splx(spl);
 }
 
 
@@ -325,7 +325,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 		addrLo = (((permissions & 2)|1) << 9) | (tempPTE->pa);	// setting the dirty bit ( & with 010 - 2) and valid bit ( | with 1)
 		
 		// insert into TLB
-		//spl = splhigh();
+		//int spl = splhigh();
 
 		spinlock_acquire(&tlb_spinlock);
 		KASSERT(tlb_probe(addrHi, 0) == -1);
@@ -342,7 +342,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 			paddr_t paRead;
 			vaddr_t vaRead;
 			
-	
+			//int spl = splhigh();
 			spinlock_acquire(&tlb_spinlock);
 
 			int result = tlb_probe(faultaddress, 0);
@@ -351,7 +351,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 			tlb_write(vaRead, paRead, result);
 
 			spinlock_release(&tlb_spinlock);
-
+			//splx(spl);
  
 		} else {
 			/* panic or kill the process */
@@ -456,23 +456,25 @@ void page_free(struct addrspace *as, vaddr_t va){
 	//int spl;
 	
 	lock_acquire(coremapLock);
-	//spl = splhigh();	
 	
-	spinlock_acquire(&tlb_spinlock);	
 
 	for (int i=0; i < NUM_TLB; i++){
 		
+		//spl = splhigh();	
+		spinlock_acquire(&tlb_spinlock);	
 		tlb_read(&ehi, &elo, i);
 		if(ehi == (va & PAGE_FRAME)){
 			
 			tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+			spinlock_release(&tlb_spinlock);
+			//splx(spl);
 			break;
 		}
+		spinlock_release(&tlb_spinlock);
+		//splx(spl);
 	}
 
-	spinlock_release(&tlb_spinlock);
 
-	//splx(spl);
 
 	/* Free the corresponding coremap entry */
 //	lock_acquire(coremapLock);  //optimize lock (changed to beginning of function)

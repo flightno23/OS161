@@ -101,7 +101,6 @@ struct page_table_entry * addPTE(struct addrspace * as, vaddr_t va, paddr_t pa) 
 
 /* method to copy a page table given the first node of the page table to be copied */
 struct page_table_entry * copyPageTable(struct addrspace * old, struct addrspace * newas) {
-	int spl;
 	bool isCoremapFull;
 	
 	// if there is nothing to copy from the old address space's page table, return NULL
@@ -141,11 +140,9 @@ struct page_table_entry * copyPageTable(struct addrspace * old, struct addrspace
 			read_page(pageIndex, swapMapOffset);
 
 		} else {
-			spl = splhigh();
 
 			memcpy((void *) PADDR_TO_KVADDR(newNode->pa), (const void *) PADDR_TO_KVADDR(temp->pa), PAGE_SIZE);
 		
-			splx(spl);
 		}
 			
 		newNode->next = newFirstNode;
