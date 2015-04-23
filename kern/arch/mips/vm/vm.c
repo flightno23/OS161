@@ -134,7 +134,9 @@ void free_kpages(vaddr_t addr) {
 	paddr_t pAddress = KVADDR_TO_PADDR(addr);	
 	/* find the coremap index of the address  */
 	int coremapIndex = ROUND_DOWN(pAddress, PAGE_SIZE) / PAGE_SIZE;
-	
+	int spl;
+
+	spl = splhigh();	
 
 	/* make the pages back to free and npages to 1 */
 	lock_acquire(coremapLock);
@@ -148,6 +150,7 @@ void free_kpages(vaddr_t addr) {
 
 	lock_release(coremapLock);
 	
+	splx(spl);
 }
 
 
@@ -183,7 +186,9 @@ static paddr_t page_nalloc(int npages) {
 		}
 	}
 	
-	/* If the coremap is full, take pages from end of coremap (last 5 entries) */
+	KASSERT(coremap[coremapIndexFound].state == FREE_PAGE);	// assert that the page found is a FREE page
+	
+	/* If the coremap is full, take pages from end of coremap (last 5 entries) 
 	if (coremapIndexFound == -1) {
 		for (int i=4; i >= 0; i--) {
 			if (coremap[total_page_num - 1 - i].state == FREE_PAGE) {
@@ -191,7 +196,7 @@ static paddr_t page_nalloc(int npages) {
 				break;
 			}
 		}
-	}
+	} */
 
 	/* now that coremap index to allocate has been found , allocate it and return the base physical address */
 	coremap[coremapIndexFound].npages = npages;
@@ -322,11 +327,11 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 		// insert into TLB
 		//spl = splhigh();
 
-		// spinlock_acquire(&tlb_spinlock);
+		spinlock_acquire(&tlb_spinlock);
 		KASSERT(tlb_probe(addrHi, 0) == -1);
 
 		tlb_random(addrHi, addrLo);
-		// spinlock_release(&tlb_spinlock);
+		spinlock_release(&tlb_spinlock);
 		
 		//splx(spl);
 					
@@ -338,14 +343,14 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 			vaddr_t vaRead;
 			
 	
-			// spinlock_acquire(&tlb_spinlock);
+			spinlock_acquire(&tlb_spinlock);
 
 			int result = tlb_probe(faultaddress, 0);
 			tlb_read(&vaRead, &paRead, result);
 			paRead |= (1 << 10); // setting the dirty bit to 1
 			tlb_write(vaRead, paRead, result);
 
-			// spinlock_release(&tlb_spinlock);
+			spinlock_release(&tlb_spinlock);
 
  
 		} else {
@@ -407,8 +412,10 @@ bool make_page_avail (int * index_to_ret){
 static
 void
 as_zero_region(paddr_t paddr, unsigned npages)
-{
+{	
+	int spl = splhigh();
 	bzero((void *)PADDR_TO_KVADDR(paddr), npages * PAGE_SIZE);
+	splx(spl);
 }
 
 
@@ -420,7 +427,7 @@ paddr_t page_alloc(struct addrspace *as, vaddr_t va, int index){
 	uint32_t nanosecs;
 
 	spl = splhigh();
-
+	KASSERT(coremap[index].state != FIXED_PAGE);	// assert that the page is not fixed
 	
 	as_zero_region(index * PAGE_SIZE, 1); // Zero the said PAGE
 	

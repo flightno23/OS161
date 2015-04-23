@@ -114,6 +114,7 @@ struct page_table_entry * copyPageTable(struct page_table_entry * firstNode, str
 	struct page_table_entry * newFirstNode = NULL;
 	int pageIndex;
 
+	lock_acquire(coremapLock);
 	
 	// copy to head using a while loop as order doesn't matter
 	while (temp != NULL) {	
@@ -129,7 +130,7 @@ struct page_table_entry * copyPageTable(struct page_table_entry * firstNode, str
 			swapout(pageIndex);
 		}
 		// Allocate a new page and move contents from the old page physical address to the new page
-		newNode->pa = page_alloc(as, newNode->va, pageIndex); //Change this!!!
+		newNode->pa = page_alloc(as, newNode->va, pageIndex);
 		
 		spl = splhigh();
 
@@ -141,6 +142,8 @@ struct page_table_entry * copyPageTable(struct page_table_entry * firstNode, str
 		newFirstNode = newNode;
 		temp = temp->next;
 	}
+
+	lock_release(coremapLock);
 
 	return newFirstNode;
 
