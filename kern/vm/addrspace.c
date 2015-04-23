@@ -102,7 +102,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	newas->as_heapEnd = old->as_heapEnd;	// end point of the heap
 	
 	// copy the page table of the old address space
-	newas->firstNode = copyPageTable(old->firstNode, newas);
+	newas->firstNode = copyPageTable(old, newas);
 	
 	*ret = newas;
 	return 0;

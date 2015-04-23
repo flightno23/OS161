@@ -134,9 +134,9 @@ void free_kpages(vaddr_t addr) {
 	paddr_t pAddress = KVADDR_TO_PADDR(addr);	
 	/* find the coremap index of the address  */
 	int coremapIndex = ROUND_DOWN(pAddress, PAGE_SIZE) / PAGE_SIZE;
-	int spl;
+	// int spl;
 
-	spl = splhigh();	
+	//spl = splhigh();	
 
 	/* make the pages back to free and npages to 1 */
 	lock_acquire(coremapLock);
@@ -150,7 +150,7 @@ void free_kpages(vaddr_t addr) {
 
 	lock_release(coremapLock);
 	
-	splx(spl);
+	//splx(spl);
 }
 
 
@@ -413,20 +413,20 @@ static
 void
 as_zero_region(paddr_t paddr, unsigned npages)
 {	
-	int spl = splhigh();
+	// int spl = splhigh();
 	bzero((void *)PADDR_TO_KVADDR(paddr), npages * PAGE_SIZE);
-	splx(spl);
+	// splx(spl);
 }
 
 
 /* Method to allocate one physical page to the user */
 paddr_t page_alloc(struct addrspace *as, vaddr_t va, int index){
 
-	int spl;
+	//int spl;
 	time_t secs;
 	uint32_t nanosecs;
 
-	spl = splhigh();
+	//spl = splhigh();
 	KASSERT(coremap[index].state != FIXED_PAGE);	// assert that the page is not fixed
 	
 	as_zero_region(index * PAGE_SIZE, 1); // Zero the said PAGE
@@ -440,7 +440,7 @@ paddr_t page_alloc(struct addrspace *as, vaddr_t va, int index){
 	coremap[index].nanosecs = nanosecs;	
 	
 
-	splx(spl);
+	//splx(spl);
 
 	return index*PAGE_SIZE;	
 }
@@ -453,12 +453,12 @@ void page_free(struct addrspace *as, vaddr_t va){
 	/* Find if the page is in the TLB and shoot it down */
 
 	uint32_t ehi, elo;
-	int spl;
+	//int spl;
 	
 	lock_acquire(coremapLock);
-	spl = splhigh();	
+	//spl = splhigh();	
 	
-	//spinlock_acquire(&tlb_spinlock);	
+	spinlock_acquire(&tlb_spinlock);	
 
 	for (int i=0; i < NUM_TLB; i++){
 		
@@ -470,9 +470,9 @@ void page_free(struct addrspace *as, vaddr_t va){
 		}
 	}
 
-	//spinlock_release(&tlb_spinlock);
+	spinlock_release(&tlb_spinlock);
 
-	splx(spl);
+	//splx(spl);
 
 	/* Free the corresponding coremap entry */
 //	lock_acquire(coremapLock);  //optimize lock (changed to beginning of function)

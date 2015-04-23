@@ -100,21 +100,24 @@ struct page_table_entry * addPTE(struct addrspace * as, vaddr_t va, paddr_t pa) 
 }
 
 /* method to copy a page table given the first node of the page table to be copied */
-struct page_table_entry * copyPageTable(struct page_table_entry * firstNode, struct addrspace * as) {
+struct page_table_entry * copyPageTable(struct addrspace * old, struct addrspace * newas) {
 	int spl;
 	bool isCoremapFull;
 	
-	// if there is nothing to copy, return NULL
-	if (firstNode == NULL) {
+	// if there is nothing to copy from the old address space's page table, return NULL
+	if (old->firstNode == NULL) {
 		return NULL;
 	}
 
 	// else start copying the page table
-	struct page_table_entry * temp = firstNode;
+	struct page_table_entry * temp = old->firstNode;
 	struct page_table_entry * newFirstNode = NULL;
 	int pageIndex;
 
 	lock_acquire(coremapLock);
+	
+	/*For swapped pages that are to be copied, they will be copied into memory from the vnode. This means that 
+	newly allocated pages will always be in memory until and unless they are swapped out */
 	
 	// copy to head using a while loop as order doesn't matter
 	while (temp != NULL) {	
@@ -123,20 +126,27 @@ struct page_table_entry * copyPageTable(struct page_table_entry * firstNode, str
 		newNode->pa = 0;
 		newNode->permissions = temp->permissions;
 		newNode->state = temp->state;
-		newNode->inDisk = temp->inDisk;
+		newNode->inDisk = false;
 		isCoremapFull = make_page_avail(&pageIndex);
 		
 		if (isCoremapFull){
 			swapout(pageIndex);
 		}
 		// Allocate a new page and move contents from the old page physical address to the new page
-		newNode->pa = page_alloc(as, newNode->va, pageIndex);
+		newNode->pa = page_alloc(newas, newNode->va, pageIndex);
 		
-		spl = splhigh();
+		/* New Code to enable copying pages from disk to memory also */
+		if (temp->inDisk == true) {	
+			int swapMapOffset = locate_swap_page(old, temp->va);
+			read_page(pageIndex, swapMapOffset);
 
-		memcpy((void *) PADDR_TO_KVADDR(newNode->pa), (const void *) PADDR_TO_KVADDR(temp->pa), PAGE_SIZE);
+		} else {
+			spl = splhigh();
+
+			memcpy((void *) PADDR_TO_KVADDR(newNode->pa), (const void *) PADDR_TO_KVADDR(temp->pa), PAGE_SIZE);
 		
-		splx(spl);
+			splx(spl);
+		}
 			
 		newNode->next = newFirstNode;
 		newFirstNode = newNode;
@@ -146,7 +156,6 @@ struct page_table_entry * copyPageTable(struct page_table_entry * firstNode, str
 	lock_release(coremapLock);
 
 	return newFirstNode;
-
 	
 }
 
