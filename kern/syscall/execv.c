@@ -155,7 +155,7 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	/* Update the addresses that need to be copied in the user stack*/
 	for (i = 0; i < numArgs; i ++){
 
-		*(int *)startPoint = stackStart + *(int *)startPoint;
+		*(int*)startPoint = stackStart + *(int *)startPoint;
 		startPoint += 4;
 	}	                             
 
@@ -163,7 +163,7 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	startPoint -= (numArgs*4);
 
 	copyout(startPoint, (userptr_t)stackStart, numBytes);
-	stackptr -= numBytes;		
+	//stackptr -= numBytes;		
 
 	enter_new_process(numArgs, (userptr_t)stackStart, stackptr, entrypoint);
 	
