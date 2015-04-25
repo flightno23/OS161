@@ -20,6 +20,7 @@ struct coremap_entry{
 
 /* total no of pages in the coremap */
 int total_page_num;
+int noOfFixed;
 
 /* start address of the coremap array */
 struct coremap_entry *coremap;

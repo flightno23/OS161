@@ -7,11 +7,14 @@ int process_create(pid_t ppid, pid_t cpid, struct thread * selfThread) {
 	
 	/* initialize the process structure */	
 	struct process * proc;
-	proc = kmalloc(sizeof(*proc));
+	proc = kmalloc(sizeof(struct process));
+	KASSERT(proc != NULL);
+
 	proc->exitcv = waitpidcv;
 	proc->exited = false;
 	proc->self = selfThread;
 	proc->ppid = ppid;	
+	
 	/* initialize the process table with child's pid*/	
 	p_table[cpid] = proc;
 
@@ -37,6 +40,8 @@ void process_destroy(pid_t pidValue) {
 	
 	/* Destroy the process structure and set the p_table value of the corresponding process to NULL*/
 	struct process * procToDestroy = p_table[pidValue];
+	KASSERT(procToDestroy != NULL);
+
 	kfree(procToDestroy);
 	p_table[pidValue] = NULL;
 

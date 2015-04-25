@@ -77,7 +77,7 @@ vm_bootstrap(void)
 	pages between (freeaddr, lastaddr) marked as free */
 
 	/* finding number of pages between [0, freeaddr) and initialize them to FIXED */
-	int noOfFixed = ROUND_UP(freeaddr, PAGE_SIZE) / PAGE_SIZE;
+	noOfFixed = ROUND_UP(freeaddr, PAGE_SIZE) / PAGE_SIZE;
 	int i=0; /* this will act as the loop counter */
 
 	while (i < noOfFixed) {
@@ -119,7 +119,11 @@ vaddr_t alloc_kpages(int npages) {
 		//lock_acquire(coremapLock);
 	
 		pa = page_nalloc(npages);
-		
+		KASSERT(pa != 0);
+		if (pa == 0) {
+			return 0;
+		}
+	
 		as_zero_region(pa, npages);	
 
 		//lock_release(coremapLock);
@@ -130,7 +134,6 @@ vaddr_t alloc_kpages(int npages) {
 /* function to free the kernel pages */
 void free_kpages(vaddr_t addr) {
 	
-	(void) addr;		
 	paddr_t pAddress = KVADDR_TO_PADDR(addr);	
 	// find the coremap index of the address  
 	int coremapIndex = ROUND_DOWN(pAddress, PAGE_SIZE) / PAGE_SIZE;
@@ -142,6 +145,7 @@ void free_kpages(vaddr_t addr) {
 	//lock_acquire(coremapLock);
 
 	int npages = coremap[coremapIndex].npages;
+	KASSERT(npages == 1);	
 	
 	for (int i=0; i < npages; i++) {
 		coremap[coremapIndex+i].state = FREE_PAGE;
@@ -165,7 +169,7 @@ static paddr_t page_nalloc(int npages) {
 	paddr_t addrToReturn; 
 	
 	/* scan the coremap to find continous chunk of free pages */
-	for (int i=0; i < total_page_num; i++) {
+	for (int i = noOfFixed+1; i < total_page_num; i++) {
 
 		if (coremap[i].state == FREE_PAGE) {
 			chunk_okay = true;
@@ -193,15 +197,6 @@ static paddr_t page_nalloc(int npages) {
 		swapout(coremapIndexFound);
 
 	}	
-	/* If the coremap is full, take pages from end of coremap (last 5 entries) 
-	if (coremapIndexFound == -1) {
-		for (int i=4; i >= 0; i--) {
-			if (coremap[total_page_num - 1 - i].state == FREE_PAGE) {
-				coremapIndexFound = total_page_num - 1 - i;
-				break;
-			}
-		}
-	} */
 
 	/* now that coremap index to allocate has been found , allocate it and return the base physical address */
 	coremap[coremapIndexFound].npages = npages;
@@ -386,7 +381,7 @@ bool make_page_avail (int * index_to_ret){
 	nanosecs = 0;
 
         /*Find appropriate index of coremap to allocate a free page or the oldest page*/
-        for (int i=0; i < total_page_num - 20; i++){
+        for (int i = noOfFixed+1; i < total_page_num - 20; i++){
 		
 
                 /* Checks to find a free page */

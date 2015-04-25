@@ -32,6 +32,7 @@ int sys_openConsole(char * fileName, int flags, int mode, int * retval, int perm
 			}	
 			*retval = 0;
 			curthread->t_fdtable[0] = fhandle_create(fileName, flags, 0, node);
+			KASSERT(curthread->t_fdtable[0] != NULL);
 			break;
 		}
 		
@@ -43,6 +44,7 @@ int sys_openConsole(char * fileName, int flags, int mode, int * retval, int perm
 			}	
 			*retval = 1;
 			curthread->t_fdtable[1] = fhandle_create(fileName, flags, 0, node);
+			KASSERT(curthread->t_fdtable[1] != NULL);
 			break;		
 		}
 		
@@ -54,6 +56,7 @@ int sys_openConsole(char * fileName, int flags, int mode, int * retval, int perm
 			}	
 			*retval = 2;
 			curthread->t_fdtable[2] = fhandle_create(fileName, flags, 0, node);
+			KASSERT(curthread->t_fdtable[2] != NULL);
 			break;
 		}
 	}
@@ -127,10 +130,12 @@ int sys_open(const_userptr_t fileName, int flags, int * retval) {
 		int bytes = buffer.st_size;
 		*retval = slot;
 		curthread->t_fdtable[slot] = fhandle_create(fileNameFromUser, flags, bytes, node);
+		KASSERT(curthread->t_fdtable[slot] != NULL);
 	
 	} else { /* case where append flag is not TRUE */
 	 	*retval = slot;
 		curthread->t_fdtable[slot] = fhandle_create(fileNameFromUser, flags, 0, node);
+		KASSERT(curthread->t_fdtable[slot] != NULL);
 	}
 
 	/* on success, return 0 */
@@ -481,6 +486,8 @@ struct fhandle * fhandle_create(char *name, int flags, off_t offset, struct vnod
 void fhandle_destroy(struct fhandle *fdesc) {
 
 	KASSERT(fdesc != NULL);
+	KASSERT(fdesc->name != NULL);
+
 	/* destroy lock and close vnode*/
 	lock_destroy(fdesc->lock);
 	vfs_close(fdesc->vn);

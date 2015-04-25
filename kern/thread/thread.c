@@ -154,7 +154,6 @@ thread_create(const char *name)
 
 	/* If you add to struct thread, be sure to initialize here */
 	
-	
 	/* allocating a pid for the user process */	
 	int err = 0;
 	err = pid_alloc(&thread->t_pid);

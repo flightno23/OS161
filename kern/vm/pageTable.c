@@ -77,6 +77,7 @@ struct page_table_entry * addPTE(struct addrspace * as, vaddr_t va, paddr_t pa) 
 	
 	struct page_table_entry * pteToAdd;
 	pteToAdd = kmalloc(sizeof(struct page_table_entry));
+	KASSERT(pteToAdd != NULL);	
 
 	pteToAdd->va = va;
 	pteToAdd->pa = pa;
@@ -127,13 +128,15 @@ struct page_table_entry * copyPageTable(struct addrspace * old, struct addrspace
 		newNode->state = temp->state;
 		newNode->inDisk = false;
 		isCoremapFull = make_page_avail(&pageIndex);
-		
+		KASSERT(pageIndex >= 0 && pageIndex < total_page_num);		
+	
 		if (isCoremapFull){
 			swapout(pageIndex);
 		}
 		// Allocate a new page and move contents from the old page physical address to the new page
 		newNode->pa = page_alloc(newas, newNode->va, pageIndex);
-		
+		KASSERT(newNode->pa != 0);
+	
 		/* New Code to enable copying pages from disk to memory also */
 		if (temp->inDisk == true) {	
 			int swapMapOffset = locate_swap_page(old, temp->va);

@@ -54,6 +54,8 @@ void child_forkentry(void * data1, unsigned long data2) {
 	/* Step 2: Load and activate the address space of the child */
 
 	curthread->t_addrspace = (struct addrspace *) data2;
+	KASSERT(curthread->t_addrspace != NULL);
+
 	as_activate(curthread->t_addrspace);
 	
 	/* Step 3: Declare a struct trapframe and copy the contents of the trapframe passed in onto the new trapframe */
@@ -62,6 +64,8 @@ void child_forkentry(void * data1, unsigned long data2) {
 	tf.tf_a3 = 0;
 	tf.tf_v0 = 0;
 	tf.tf_epc += 4;
+
+	KASSERT(data1 != NULL);
 	kfree(data1);
 	/* Step 4: Call mips_usermode and return to user mode */
 	mips_usermode(&tf);
