@@ -280,8 +280,9 @@ thread_destroy(struct thread *thread)
 
 	/* sheer paranoia */
 	thread->t_wchan_name = "DESTROYED";
-
-	kfree(thread->t_name);
+	
+	/* Line below causing problems */
+	//kfree(thread->t_name);
 
 	kfree(thread);
 }
