@@ -117,7 +117,7 @@ vaddr_t alloc_kpages(int npages) {
 		}
 	} else {	// VM has bootstrapped , use page_nalloc
 		//lock_acquire(coremapLock);
-	
+		int spl = splhigh();	
 		pa = page_nalloc(npages);
 		KASSERT(pa != 0);
 		if (pa == 0) {
@@ -125,7 +125,7 @@ vaddr_t alloc_kpages(int npages) {
 		}
 	
 		as_zero_region(pa, npages);	
-
+		splx(spl);
 		//lock_release(coremapLock);
 	}
 	return PADDR_TO_KVADDR(pa);
@@ -455,8 +455,6 @@ void page_free(struct addrspace *as, vaddr_t va){
 	uint32_t ehi, elo;
 	//int spl;
 	
-	lock_acquire(coremapLock);
-	
 
 	for (int i=0; i < NUM_TLB; i++){
 		
@@ -490,7 +488,6 @@ void page_free(struct addrspace *as, vaddr_t va){
 
 		}
 	}
-	lock_release(coremapLock);
 
 }
 	

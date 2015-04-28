@@ -40,7 +40,6 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	if (args == NULL || args == (void *)0x80000000 || args == (void *) 0x40000000) {
 		return EFAULT;
 	}
-
 	
 
 	/* Step 2: get the number of arguments from userspace */
@@ -49,14 +48,14 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	
 	
 	int i = 0;
-	char junk[255];
+	//char junk[255];
 
 	// This while loop gets the number of arguments from userspace
 	while (*(char **)(args+i) != NULL) {
 		result = copyin(args+i, &random, sizeof(int));
 		if (result) return EFAULT;
-		result = copyinstr((userptr_t)random, junk, 255, &actual);
-		if (result) return EFAULT; 
+		//result = copyinstr((userptr_t)random, junk, 255, &actual);
+		//if (result) return EFAULT; 
 		numArgs++;
 		i += 4;
 	}	
@@ -81,7 +80,7 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	int len;
 	int padding = 0;
 	/* Creating (numArgs+1) contigous block of pointers of 4 bytes each */
-	char nullPadding[3] = "\0\0\0";
+	char nullPadding[4] = "\0\0\0\0";
 	startPoint = kmalloc(sizeof(int *) * (numArgs+1));
 	numBytes += (sizeof(int *) * (numArgs+1));
 	startPoint += numBytes;
@@ -89,7 +88,7 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 
 	for (i=0;i<numArgs; i++){
 		*(int *)((startPoint-numBytes) + (i*intSize))  = numBytes;
-		len = strlen(commands[i]) +1;
+		len = strlen(commands[i])+1;
 		memcpy(startPoint,commands[i],len);
 		numBytes += len;
 		startPoint += len;
@@ -109,11 +108,11 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	curthread->t_addrspace = NULL;
 
 	/* Rest of the functionality is similar to runprogam */
-	struct vnode *v;
+	struct vnode *p;
         vaddr_t entrypoint, stackptr;
 
         /* Open the file. */
-        result = vfs_open(progNameFromUser, O_RDONLY, 0, &v);
+        result = vfs_open(progNameFromUser, O_RDONLY, 0, &p);
         if (result) {
                 return result;
         }
@@ -124,7 +123,7 @@ int sys_execv(const_userptr_t progname, userptr_t args){
         /* Create a new address space. */
         curthread->t_addrspace = as_create();
         if (curthread->t_addrspace==NULL) {
-                vfs_close(v);
+                vfs_close(p);
                 return ENOMEM;
         }
 
@@ -132,15 +131,15 @@ int sys_execv(const_userptr_t progname, userptr_t args){
         as_activate(curthread->t_addrspace);
 
         /* Load the executable. */
-	        result = load_elf(v, &entrypoint);
+	        result = load_elf(p, &entrypoint);
         if (result) {
                 /* thread_exit destroys curthread->t_addrspace */
-                vfs_close(v);
+                vfs_close(p);
                 return result;
         }
 
         /* Done with the file now. */
-        vfs_close(v);
+        vfs_close(p);
 
         /* Define the user stack in the address space */
         result = as_define_stack(curthread->t_addrspace, &stackptr);
@@ -149,7 +148,7 @@ int sys_execv(const_userptr_t progname, userptr_t args){
                 return result;
         }
 	
-	int stackStart;
+	uint32_t stackStart;
 	stackStart = stackptr - numBytes;
 	
 	/* Update the addresses that need to be copied in the user stack*/
@@ -159,13 +158,13 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 		startPoint += 4;
 	}	                             
 
-	*(int *)startPoint = (int)NULL;
+	*(int *)startPoint = 0x0;
 	startPoint -= (numArgs*4);
 
 	copyout(startPoint, (userptr_t)stackStart, numBytes);
-	//stackptr -= numBytes;		
-
-	enter_new_process(numArgs, (userptr_t)stackStart, stackptr, entrypoint);
+	stackptr -= numBytes;		
+	KASSERT(stackStart == stackptr);
+	enter_new_process(numArgs, (userptr_t)stackptr, stackptr, entrypoint);
 	
 	return 0; 
 }

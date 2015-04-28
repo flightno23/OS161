@@ -112,8 +112,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 /* Destroys the address space structure as well as the page table data structure associated with it*/
 void
 as_destroy(struct addrspace *as)
-{
-	
+{	
 	deletePageTable(as);	
 		
 	kfree(as);

@@ -43,8 +43,8 @@ void swapout(int indexToSwap) {
 
 	/* Step 1: Remove the translation from the TLB if it exists */
 	// probe the TLB for the entry
-	//int spl = splhigh();
-	spinlock_acquire(&tlb_spinlock);
+	int spl = splhigh();
+	//spinlock_acquire(&tlb_spinlock);
 	probeResult = tlb_probe(coremap[indexToSwap].va, 0);
 	if (probeResult >= 0) {
 		// invalidate the entry by loading an unmapped address into the TLB
@@ -52,8 +52,8 @@ void swapout(int indexToSwap) {
 	} else {
 		// do nothing
 	}
-	spinlock_release(&tlb_spinlock);
-	//splx(spl);
+	//spinlock_release(&tlb_spinlock);
+	splx(spl);
 	/* Step 2: Copy the contents of the page to the disk everytime (no concept of clean pages used) */		
 	write_page(indexToSwap);
 
@@ -70,7 +70,7 @@ void swapout(int indexToSwap) {
 	coremap[indexToSwap].as = NULL;
 	coremap[indexToSwap].va = 0;
 	coremap[indexToSwap].state = FREE_PAGE;
-	coremap[indexToSwap].npages = 0;
+	coremap[indexToSwap].npages = 1;
 	gettime(&secs, &nanosecs);
 	coremap[indexToSwap].secs = secs;
 	coremap[indexToSwap].nanosecs = nanosecs;
@@ -89,13 +89,13 @@ void swapin(struct page_table_entry * tempPTE, int indexToSwap) {
 	uint32_t nanosecs;
 	/* Step 1: locate the page on disk using the page table entry and the swapMap */
 	swapMapLocation = locate_swap_page(curthread->t_addrspace, tempPTE->va);	
-
+	KASSERT(swapMapLocation != -1);
 	/* Step 2: Copy the contents from disk to the index designated for the swap in operation */
 	read_page(indexToSwap, swapMapLocation);
 
 	/* Step 3: Update the page table entry and the coremap to indicate that the page is in memory */
 	tempPTE->pa = indexToSwap * PAGE_SIZE;
-	tempPTE->state = CLEAN_PAGE; 
+	tempPTE->state = DIRTY_PAGE; 
 	tempPTE->inDisk = false;
 
 	coremap[indexToSwap].as = curthread->t_addrspace;
@@ -128,6 +128,7 @@ void write_page(int indexToSwapOut) {
 	} else { /* Step 2: if not, find a free swap entry in the swapMap and write to that region */
 	
 		swapMapOffset = locate_free_entry();
+		KASSERT(swapMapOffset != -1);
 		struct swapPageEntry * tempPage = kmalloc(sizeof(struct swapPageEntry));
 	
 		tempPage->as = coremap[indexToSwapOut].as;

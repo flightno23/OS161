@@ -16,6 +16,7 @@ struct page_table_entry * pgdir_walk(struct addrspace * as, vaddr_t va) {
 
 	// else, search for matching nodes
 	while (tempNode != NULL) {
+		if (tempNode->va == 0xdeadbeef) continue;
 		if ( (tempNode->va) == va) {
 			return tempNode;
 		}
@@ -32,14 +33,19 @@ void deletePageTable(struct addrspace * as) {
 	// get the first node of the current address space
 	struct page_table_entry * firstPTE = as->firstNode;
 	struct page_table_entry * temp;
-	
+	lock_acquire(coremapLock);	
 	// loop from the first Node to the end
 	while (firstPTE != NULL) {
 		temp = firstPTE;
-		page_free(as, temp->va);
+		if (temp->inDisk == false) {
+			page_free(as, temp->va);
+		}
 		firstPTE = firstPTE->next;
 		kfree(temp);
 	}
+
+	as->firstNode = NULL;
+	lock_release(coremapLock);
 
 	return;
 }
@@ -140,6 +146,7 @@ struct page_table_entry * copyPageTable(struct addrspace * old, struct addrspace
 		/* New Code to enable copying pages from disk to memory also */
 		if (temp->inDisk == true) {	
 			int swapMapOffset = locate_swap_page(old, temp->va);
+			KASSERT(swapMapOffset != -1);
 			read_page(pageIndex, swapMapOffset);
 
 		} else {
