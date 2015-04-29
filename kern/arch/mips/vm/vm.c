@@ -279,9 +279,25 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 	// Now, check if the faultaddress is a valid one
 	if (faultaddress >= vbase1 && faultaddress < vtop1) {
 		// Do nothing , in valid region
+		int perm;
+		perm = as_get_permissions(as, faultaddress);
+		if (perm <= 7) {
+			if ( ((perm & 2) == 0) && (faulttype == VM_FAULT_WRITE) ) {
+				return EFAULT;
+			}
+
+		}
+			
 	}
 	else if (faultaddress >= vbase2 && faultaddress < vtop2) {
 		// Do nothing , in valid region
+		int perm;
+		perm = as_get_permissions(as, faultaddress);
+		if (perm <= 7) {
+			if ( ((perm & 2) == 0) && (faulttype == VM_FAULT_WRITE) ) {
+				return EFAULT;
+			}
+		}
 	}
 	else if (faultaddress >= stackbase && faultaddress < stacktop) {
 		// Do nothing , in valid region
@@ -293,6 +309,8 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 		return EFAULT;	// oops, you have reached an invalid region of the address space
 	}
 	
+	/* Check for permissions else kill thread if permissions don't match */
+
 	
 	/* VM_FAULTS will be processed serially by acquiring the coremap lock
 		DUMB idea but easy implementation possible this way */

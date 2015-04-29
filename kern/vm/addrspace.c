@@ -160,7 +160,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 	/*
 	 * Write this.
 	 */
-
+	(void) writeable;
 
 	size_t npages; 
 
@@ -287,10 +287,10 @@ int as_get_permissions(struct addrspace * as, vaddr_t faultaddress){
 	// The permissions will be set in the last 3 bits
 	// 7 is 111 (binary)
 	if (faultaddress >= vbase1 && faultaddress < vtop1) {
-		permissions = (7 & as->as_vbase1); 
+		permissions = (63 & as->as_vbase1); 
         }
         else if (faultaddress >= vbase2 && faultaddress < vtop2) {
-		permissions = (7 & as->as_vbase2);
+		permissions = (63 & as->as_vbase2);
         }
         else if (faultaddress >= stackbase && faultaddress < stacktop) {
 		permissions = (7 & as->as_stackvbase);
