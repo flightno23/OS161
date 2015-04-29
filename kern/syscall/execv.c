@@ -158,13 +158,13 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 		startPoint += 4;
 	}	                             
 
-	*(int *)startPoint = 0x0;
+	*(int *)startPoint = (int)NULL;
 	startPoint -= (numArgs*4);
 
 	copyout(startPoint, (userptr_t)stackStart, numBytes);
 	stackptr -= numBytes;		
-	KASSERT(stackStart == stackptr);
-	enter_new_process(numArgs, (userptr_t)stackptr, stackptr, entrypoint);
+	//KASSERT(stackStart == stackptr);
+	enter_new_process(0, (userptr_t)stackStart, stackptr, entrypoint);
 	
 	return 0; 
 }

@@ -128,6 +128,8 @@ vaddr_t alloc_kpages(int npages) {
 		splx(spl);
 		//lock_release(coremapLock);
 	}
+
+	KASSERT(PADDR_TO_KVADDR(pa) >= 0x80000000);
 	return PADDR_TO_KVADDR(pa);
 }
 
@@ -136,9 +138,10 @@ void free_kpages(vaddr_t addr) {
 	
 	paddr_t pAddress = KVADDR_TO_PADDR(addr);	
 	// find the coremap index of the address  
-	int coremapIndex = ROUND_DOWN(pAddress, PAGE_SIZE) / PAGE_SIZE;
+	int coremapIndex = pAddress / PAGE_SIZE;
 	int spl;
-
+	KASSERT(pAddress < 0x80000000);
+	KASSERT(pAddress % PAGE_SIZE == 0);
 	spl = splhigh();	
 
 	// make the pages back to free and npages to 1 
@@ -190,6 +193,8 @@ static paddr_t page_nalloc(int npages) {
 		}
 	}
 	
+	KASSERT(coremap[coremapIndexFound].state == FREE_PAGE);
+	KASSERT(npages == 1);	
 	// in case no chunk found swapout pages	
 	if (coremap[coremapIndexFound].state != FREE_PAGE) {
 
@@ -302,6 +307,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 				swapout(indexToAlloc);
 			}  
 			
+			KASSERT(indexToAlloc < total_page_num);	
 			tempPa = page_alloc(as, faultaddress, indexToAlloc);	
 			tempPTE = addPTE(as, faultaddress, tempPa);
 
@@ -317,23 +323,26 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 			
 
 		} 
-
+		
+		KASSERT(tempPTE->pa != 0);
 		// Call tlb_random after the packing the bits
 		permissions = tempPTE->permissions;
+
+		KASSERT(permissions <= 7);
 		uint32_t addrHi, addrLo;
 		addrHi = faultaddress;
 		addrLo = (((permissions & 2)|1) << 9) | (tempPTE->pa);	// setting the dirty bit ( & with 010 - 2) and valid bit ( | with 1)
-		
+		KASSERT(faultaddress < 0x80000000);	
 		// insert into TLB
-		//int spl = splhigh();
+		int spl = splhigh();
 
-		spinlock_acquire(&tlb_spinlock);
+		//spinlock_acquire(&tlb_spinlock);
 		KASSERT(tlb_probe(addrHi, 0) == -1);
 
 		tlb_random(addrHi, addrLo);
-		spinlock_release(&tlb_spinlock);
+		//spinlock_release(&tlb_spinlock);
 		
-		//splx(spl);
+		splx(spl);
 					
 	} else if (faulttype == VM_FAULT_READONLY) {  // Dealing with VM_FAULT_READONLY, when write was requested on address having read-only permission
 		/* checking if the page is actually writable */
@@ -413,6 +422,7 @@ static
 void
 as_zero_region(paddr_t paddr, unsigned npages)
 {	
+	KASSERT(npages == 1);	
 	// int spl = splhigh();
 	bzero((void *)PADDR_TO_KVADDR(paddr), npages * PAGE_SIZE);
 	// splx(spl);
@@ -427,7 +437,9 @@ paddr_t page_alloc(struct addrspace *as, vaddr_t va, int index){
 	uint32_t nanosecs;
 
 	//spl = splhigh();
-	KASSERT(coremap[index].state != FIXED_PAGE);	// assert that the page is not fixed
+	KASSERT(coremap[index].state == FREE_PAGE);	// assert that the page is not fixed
+	KASSERT(va < 0x80000000);
+	KASSERT(index < total_page_num);
 	
 	as_zero_region(index * PAGE_SIZE, 1); // Zero the said PAGE
 	
@@ -451,26 +463,26 @@ void page_free(struct addrspace *as, vaddr_t va){
 	/* Define a spinlock to protect the TLB */
 
 	/* Find if the page is in the TLB and shoot it down */
-
+	KASSERT((va & PAGE_FRAME) == va);
 	uint32_t ehi, elo;
-	//int spl;
-	
+	int spl;
+	KASSERT(va < 0x80000000);	
 
+	spl = splhigh();	
 	for (int i=0; i < NUM_TLB; i++){
 		
-		//spl = splhigh();	
-		spinlock_acquire(&tlb_spinlock);	
+		//spinlock_acquire(&tlb_spinlock);	
 		tlb_read(&ehi, &elo, i);
 		if(ehi == (va & PAGE_FRAME)){
 			
 			tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
-			spinlock_release(&tlb_spinlock);
-			//splx(spl);
+			//spinlock_release(&tlb_spinlock);
+			splx(spl);
 			break;
 		}
-		spinlock_release(&tlb_spinlock);
-		//splx(spl);
+		//spinlock_release(&tlb_spinlock);
 	}
+	splx(spl);
 
 
 
@@ -482,7 +494,7 @@ void page_free(struct addrspace *as, vaddr_t va){
 			
 			coremap[i].as = NULL;
 			coremap[i].va = 0;
-			coremap[i].npages = 0;
+			coremap[i].npages = 1;
 			coremap[i].state = FREE_PAGE;
 			break;
 

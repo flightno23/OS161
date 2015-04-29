@@ -37,7 +37,7 @@
 #include <mips/tlb.h> /* for access to the TLB interface */
 
 /* Number of stack pages in system - right now its hard coded */
-#define SMARTVM_STACKPAGES 12
+#define SMARTVM_STACKPAGES 64
 
 
 /*
@@ -134,15 +134,13 @@ as_activate(struct addrspace *as)
 	/* Disable interrupts on this CPU while frobbing the TLB. */
 
 	for (i=0; i<NUM_TLB; i++) {
-		//int spl = splhigh();
-		spinlock_acquire(&tlb_spinlock);
+		int spl = splhigh();
+		//spinlock_acquire(&tlb_spinlock);
 		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
-		spinlock_release(&tlb_spinlock);
-		//splx(spl);
+		//spinlock_release(&tlb_spinlock);
+		splx(spl);
 	}
-	
-
-	
+		
 }
 
 /*
@@ -261,6 +259,7 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 	 */
 
 	/* Initial user-level stack pointer */
+	KASSERT(as != NULL);
 	*stackptr = USERSTACK;
 	as->as_stackvbase |= 7;	// setting the stack permissions as (rwe) all enabled
 
@@ -298,7 +297,9 @@ int as_get_permissions(struct addrspace * as, vaddr_t faultaddress){
         }
         else if (faultaddress >= heapStart && faultaddress < heapEnd) {
 		permissions = 7;	// giving the heap full permissions 
-        }
+        } else {
+		KASSERT(1<0);
+	}
 	
 	return permissions;                
 

@@ -39,7 +39,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <err.h>
-#include <stdio.h>
 
 /* Larger than physical memory */
 #define SIZE  (144*1024)
@@ -104,7 +103,7 @@ initarray(void)
 	/*
 	 * Initialize the array, with pseudo-random but deterministic contents.
 	 */
-	srandom(100);	// was 533
+	srandom(533);	// was 533
 
 	for (i = 0; i < SIZE; i++) {		
 		A[i] = random();

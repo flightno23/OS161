@@ -10,13 +10,13 @@
 struct page_table_entry * pgdir_walk(struct addrspace * as, vaddr_t va) {
 	
 	struct page_table_entry * tempNode = as->firstNode;
-	
+	KASSERT((va & PAGE_FRAME) == va);	
 	// if page table has no entries, return NULL
 	if (tempNode == NULL) return NULL;
 
 	// else, search for matching nodes
 	while (tempNode != NULL) {
-		if (tempNode->va == 0xdeadbeef) continue;
+		KASSERT(tempNode->va < 0x80000000);
 		if ( (tempNode->va) == va) {
 			return tempNode;
 		}
@@ -84,6 +84,7 @@ struct page_table_entry * addPTE(struct addrspace * as, vaddr_t va, paddr_t pa) 
 	struct page_table_entry * pteToAdd;
 	pteToAdd = kmalloc(sizeof(struct page_table_entry));
 	KASSERT(pteToAdd != NULL);	
+	KASSERT(va < 0x80000000);
 
 	pteToAdd->va = va;
 	pteToAdd->pa = pa;
@@ -135,7 +136,7 @@ struct page_table_entry * copyPageTable(struct addrspace * old, struct addrspace
 		newNode->inDisk = false;
 		isCoremapFull = make_page_avail(&pageIndex);
 		KASSERT(pageIndex >= 0 && pageIndex < total_page_num);		
-	
+		KASSERT(newNode->va < 0x80000000);	
 		if (isCoremapFull){
 			swapout(pageIndex);
 		}
@@ -151,6 +152,7 @@ struct page_table_entry * copyPageTable(struct addrspace * old, struct addrspace
 
 		} else {
 
+			KASSERT(temp->pa != 0);
 			memcpy((void *) PADDR_TO_KVADDR(newNode->pa), (const void *) PADDR_TO_KVADDR(temp->pa), PAGE_SIZE);
 		
 		}
