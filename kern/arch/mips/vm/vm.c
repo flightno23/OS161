@@ -399,7 +399,7 @@ bool make_page_avail (int * index_to_ret){
 	nanosecs = 0;
 
         /*Find appropriate index of coremap to allocate a free page or the oldest page*/
-        for (int i = noOfFixed+1; i < total_page_num - 20; i++){
+        for (int i = noOfFixed+1; i < total_page_num - 30; i++){
 		
 
                 /* Checks to find a free page */
