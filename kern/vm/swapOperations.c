@@ -32,8 +32,8 @@ void swapout(int indexToSwap) {
 	// check if the firstSwap flag is uninitiliased and initialize the vnode for the swap file
 	if (firstSwapOccur == false) {
 		firstSwapOccur = true;
-		char swapFileName[] = "swapfile";
-		int err = vfs_open(swapFileName, O_RDWR|O_CREAT|O_TRUNC, 0, &swapFile);
+		char swapFileName[] = "lhd0raw:";
+		int err = vfs_open(swapFileName, O_RDWR, 0, &swapFile);
 		KASSERT(err == 0);	// file should be opened correctly 	
 	}
 

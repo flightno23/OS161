@@ -39,6 +39,12 @@ void deletePageTable(struct addrspace * as) {
 		temp = firstPTE;
 		if (temp->inDisk == false) {
 			page_free(as, temp->va);
+		} else {	// if page in disk, clear swapMap Entry
+			int index = locate_swap_page(as, temp->va);
+			KASSERT(index != -1);
+			//struct swapPageEntry * tempSwap = swapMap[index];
+			//kfree(tempSwap);
+			swapMap[index] = NULL;
 		}
 		firstPTE = firstPTE->next;
 		kfree(temp);
