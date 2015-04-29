@@ -223,7 +223,15 @@ static paddr_t page_nalloc(int npages) {
 void
 vm_tlbshootdown_all(void)
 {
-	panic("smart vm tried to do tlb shootdown?!\n");
+	
+	int spl = splhigh();
+	for (int i=0; i<NUM_TLB; i++) {
+		//spinlock_acquire(&tlb_spinlock);
+		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+		//spinlock_release(&tlb_spinlock);
+	}
+	splx(spl);
+
 }
 
 void

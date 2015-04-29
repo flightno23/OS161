@@ -208,7 +208,7 @@ cpu_create(unsigned hardware_number)
 	spinlock_init(&c->c_runqueue_lock);
 
 	c->c_ipi_pending = 0;
-	c->c_numshootdown = 0;
+	c->c_numshootdown = TLBSHOOTDOWN_ALL;
 	spinlock_init(&c->c_ipi_lock);
 
 	result = cpuarray_add(&allcpus, c, &c->c_number);
@@ -1270,7 +1270,7 @@ interprocessor_interrupt(void)
 				vm_tlbshootdown(&curcpu->c_shootdown[i]);
 			}
 		}
-		curcpu->c_numshootdown = 0;
+		curcpu->c_numshootdown = TLBSHOOTDOWN_ALL;
 	}
 
 	curcpu->c_ipi_pending = 0;

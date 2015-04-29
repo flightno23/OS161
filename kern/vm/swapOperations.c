@@ -16,6 +16,7 @@
 #include <uio.h>
 #include <kern/iovec.h>
 #include <vnode.h>
+#include <cpu.h>
 
 static
 void
@@ -32,7 +33,8 @@ void swapout(int indexToSwap) {
 	if (firstSwapOccur == false) {
 		firstSwapOccur = true;
 		char swapFileName[] = "swapfile";
-		vfs_open(swapFileName, O_RDWR|O_CREAT|O_TRUNC, 0, &swapFile); 	
+		int err = vfs_open(swapFileName, O_RDWR|O_CREAT|O_TRUNC, 0, &swapFile);
+		KASSERT(err == 0);	// file should be opened correctly 	
 	}
 
 	// declare variables
@@ -54,6 +56,11 @@ void swapout(int indexToSwap) {
 	}
 	//spinlock_release(&tlb_spinlock);
 	splx(spl);
+	
+	/* Also, shootdown other TLB entries from different cores*/
+	ipi_broadcast(IPI_TLBSHOOTDOWN);
+	
+
 	/* Step 2: Copy the contents of the page to the disk everytime (no concept of clean pages used) */		
 	write_page(indexToSwap);
 

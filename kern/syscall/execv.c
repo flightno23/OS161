@@ -76,7 +76,7 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	}
 
 	void * startPoint;
-	int numBytes = 0;
+	size_t numBytes = 0;
 	int len;
 	int padding = 0;
 	/* Creating (numArgs+1) contigous block of pointers of 4 bytes each */
@@ -154,17 +154,19 @@ int sys_execv(const_userptr_t progname, userptr_t args){
 	/* Update the addresses that need to be copied in the user stack*/
 	for (i = 0; i < numArgs; i ++){
 
-		*(int*)startPoint = stackStart + *(int *)startPoint;
+		*(char**)startPoint = (int)stackStart + *(char **)startPoint;
 		startPoint += 4;
 	}	                             
 
-	*(int *)startPoint = (int)NULL;
+	*(char **)startPoint = (int)NULL;
 	startPoint -= (numArgs*4);
 
-	copyout(startPoint, (userptr_t)stackStart, numBytes);
+	int err = copyout((const void *)startPoint, (userptr_t)stackStart, numBytes);
+	KASSERT(err == 0);
 	stackptr -= numBytes;		
-	//KASSERT(stackStart == stackptr);
-	enter_new_process(0, (userptr_t)stackStart, stackptr, entrypoint);
+	KASSERT(stackStart == stackptr);
+	KASSERT(stackStart % 4 == 0);
+	enter_new_process(numArgs, (userptr_t)stackStart, stackptr, entrypoint);
 	
 	return 0; 
 }
