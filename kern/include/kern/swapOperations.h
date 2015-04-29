@@ -3,7 +3,7 @@
 #include <kern/pageTable.h>
 #include <kern/stat.h>
 
-#define MAX_SWAPPED_PAGES 2048
+#define MAX_SWAPPED_PAGES 4096
 
 /* global variable to indicate first swap out */
 bool firstSwapOccur;
