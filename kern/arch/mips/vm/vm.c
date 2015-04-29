@@ -254,6 +254,7 @@ vm_fault(int faulttype, vaddr_t faultaddress) {
 	
 	// sanity check to see if the address space is uninitialized
 	as = curthread->t_addrspace;
+	KASSERT(as != NULL);
 	if (as == NULL) {
 		return EFAULT;
 	}
