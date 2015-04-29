@@ -21,7 +21,7 @@ int sys_sbrk(int amount, int * retval) {
 		return EINVAL;
 	}
 
-	if (amount > 536870912 || amount < -536870912) return EINVAL;
+	if (amount > 536870912 || amount < -536870912) return ENOMEM;
 
 	// We are now clear to go ahead with the system call. But, before that return the old heap end through retval
 	*retval = heapEnd;
