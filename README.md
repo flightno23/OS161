@@ -5,7 +5,7 @@ The source code contains implementations to the following things (added by me): 
 1. <b>Implementation of Locks, Condition Variables and Reader-Writer Locks</b> <br>
 2. <b>Implementation of file system calls - open, close, read, write, getpid, dup2</b> <br>
 3. <b>Implementation of Process System calls - fork, execv, sbrk</b> <br>
-4. <b>Implementaion of a fully functional virtual memory subsystem - uses paging and swapping to manage memory</b> <br>
+4. <b>Implementation of a fully functional virtual memory subsystem - uses paging and swapping to manage memory</b> <br>
 <br>
 To understand the code better, I have put together a guide of where the important files are present in the source and their contents.<br> This will enable others to read my code and understand the internal workings of the OS if they want to.
 <br>
